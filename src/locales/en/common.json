@@ -1,0 +1,29 @@
+{
+  "brand": {
+    "name": "ACADEMY PRIME",
+    "tagline": "LEARN TO EARN"
+  },
+  "nav": {
+    "home": "Home",
+    "learn": "Learn",
+    "courses": "Courses",
+    "shortVideos": "Short Videos",
+    "experts": "Experts",
+    "rewards": "Rewards",
+    "about": "About",
+    "connectWallet": "Connect Wallet",
+    "login": "Log In",
+    "dashboard": "Dashboard"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "ar": "\u0627\u0644\u0639\u0631\u0628\u064a\u0629"
+  },
+  "footer": {
+    "rights": "All rights reserved.",
+    "product": "Product",
+    "company": "Company",
+    "legal": "Legal"
+  }
+}
