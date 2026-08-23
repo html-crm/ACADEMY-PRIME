@@ -1,0 +1,100 @@
+{
+  "hero": {
+    "eyebrow": "The educational heart of ACADEMY PRIME",
+    "headline": "LEARN BEFORE YOU TRUST.",
+    "subhead": "Crypto can give you freedom and opportunity — but knowledge is your first protection.",
+    "body": "The crypto space moves fast. New projects, tokens, platforms and opportunities appear every day. Unfortunately, scammers move just as fast. ACADEMY PRIME helps you understand how crypto works, recognize common risks, protect your wallet, and make more informed decisions.",
+    "ctaPrimary": "START LEARNING",
+    "ctaSecondary": "EXPLORE COURSES"
+  },
+  "message": {
+    "headline": "CRYPTO IS POWERFUL. KNOWLEDGE MAKES IT SAFER.",
+    "body": "You don't need to know everything before entering crypto. But you should understand the basics before trusting a project, connecting your wallet, sending funds, or investing your money. ACADEMY PRIME teaches the fundamentals you need to navigate the ecosystem with greater awareness.",
+    "cards": [
+      { "title": "UNDERSTAND", "body": "Learn how blockchain, wallets, tokens, transactions, DeFi and Web3 actually work." },
+      { "title": "RECOGNIZE", "body": "Learn how scams, fake projects, phishing attempts and manipulation can appear." },
+      { "title": "PROTECT", "body": "Learn safer habits for protecting your wallet, assets, accounts and personal information." }
+    ]
+  },
+  "risk": {
+    "eyebrow": "Two sides of one ecosystem",
+    "headline": "THE CRYPTO SPACE HAS OPPORTUNITY — AND RISK.",
+    "body": "Learning helps you understand both sides: what is being built, and what is trying to take advantage of you.",
+    "opportunityTitle": "OPPORTUNITY",
+    "riskTitle": "RISK",
+    "opportunityItems": ["Innovation", "DeFi", "Web3", "Bitcoin", "New Technology"],
+    "riskItems": ["Scams", "Phishing", "Fake Tokens", "Fake Projects", "Wallet Drainers"]
+  },
+  "why": {
+    "heading": "WHY SHOULD YOU LEARN CRYPTO?",
+    "cards": [
+      { "number": "01", "title": "Protect Your Wallet", "body": "Understand wallet addresses, private keys, seed phrases, signatures and transactions.", "note": "Never share your seed phrase or private key." },
+      { "number": "02", "title": "Recognize Scams", "body": "Learn how common scams work and understand the warning signs before interacting with suspicious projects, websites or messages.", "note": "" },
+      { "number": "03", "title": "Understand What You're Buying", "body": "Learn the difference between tokens, coins, stablecoins, NFTs, DeFi protocols, utility tokens and governance tokens. Knowledge helps you ask better questions before making decisions.", "note": "" },
+      { "number": "04", "title": "Verify Before You Trust", "body": "Teach yourself to verify information rather than blindly trusting influencers, Telegram groups, X posts, Discord communities, websites or advertisements.", "note": "DON'T TRUST. VERIFY." },
+      { "number": "05", "title": "Understand Transactions", "body": "Know what happens when you send crypto, receive crypto, connect a wallet, sign a transaction, approve a token, or interact with a smart contract.", "note": "" },
+      { "number": "06", "title": "Protect Your Future", "body": "Crypto transactions can be irreversible. Understanding what you are doing before signing a transaction can prevent expensive mistakes.", "note": "" }
+    ]
+  },
+  "scam": {
+    "headline": "SCAMMERS DON'T WAIT FOR YOU TO BE READY.",
+    "body": "Scammers often rely on urgency, confusion, fear and greed. They may tell you:",
+    "phrases": ["\"Buy now.\"", "\"Guaranteed profit.\"", "\"Limited opportunity.\"", "\"Send crypto to receive more.\"", "\"Connect your wallet to claim.\"", "\"Give me your seed phrase.\"", "\"This is the official account.\"", "\"You cannot lose.\""],
+    "lesson": "Slow down. Verify.",
+    "checklistTitle": "BEFORE YOU TRUST SOMETHING, ASK:",
+    "checklist": ["Who created it?", "Can I verify it?", "What am I signing?", "Where is my money going?", "What happens if something goes wrong?", "Am I being pressured to act immediately?"]
+  },
+  "stopCheckVerify": {
+    "steps": [
+      { "title": "STOP", "body": "Don't act because someone is pressuring you." },
+      { "title": "CHECK", "body": "Investigate the website, project, wallet address, contract, team and information." },
+      { "title": "VERIFY", "body": "Use reliable sources and independently confirm what you are being told." }
+    ],
+    "flow": "STOP → CHECK → VERIFY → THEN DECIDE"
+  },
+  "path": {
+    "heading": "START WITH THE BASICS.",
+    "levels": [
+      { "level": "LEVEL 1", "title": "CRYPTO BASICS", "topics": ["What is Bitcoin?", "What is cryptocurrency?", "What is blockchain?", "What are wallets?", "What are tokens?", "What are exchanges?"], "cta": "Start Level 1" },
+      { "level": "LEVEL 2", "title": "WALLET & SECURITY", "topics": ["Seed phrases", "Private keys", "Public addresses", "Wallet connections", "Transaction signatures", "Phishing", "Wallet security"], "cta": "Start Level 2" },
+      { "level": "LEVEL 3", "title": "UNDERSTANDING BLOCKCHAIN", "topics": ["Transactions", "Blocks", "Validators", "Networks", "Smart contracts", "Gas/network fees"], "cta": "Start Level 3" },
+      { "level": "LEVEL 4", "title": "DEFI & WEB3", "topics": ["DeFi", "DEXs", "Liquidity", "Lending", "Staking", "Web3 applications"], "cta": "Start Level 4" },
+      { "level": "LEVEL 5", "title": "ADVANCED CRYPTO", "topics": ["Tokenomics", "On-chain analysis", "Risk management", "Market mechanics", "Advanced security"], "cta": "Start Level 5" }
+    ]
+  },
+  "journey": {
+    "guestHeading": "START YOUR LEARNING JOURNEY",
+    "memberHeading": "YOUR LEARNING JOURNEY",
+    "overallProgress": "Overall Progress",
+    "lessonsCompleted": "Lessons Completed",
+    "coursesCompleted": "Courses Completed",
+    "rewardsEarned": "Rewards Earned",
+    "continue": "Continue Learning",
+    "createAccount": "Create Free Account"
+  },
+  "compare": {
+    "heading": "DON'T FOLLOW. UNDERSTAND.",
+    "withoutTitle": "WITHOUT KNOWLEDGE",
+    "withTitle": "WITH KNOWLEDGE",
+    "withoutItems": ["Trust random links", "Follow hype", "Believe guaranteed profits", "Connect wallets without checking", "Sign transactions without understanding", "Follow anonymous advice", "React emotionally"],
+    "withItems": ["Verify information", "Understand risks", "Research projects", "Check wallet interactions", "Read transaction details", "Question unrealistic promises", "Make informed decisions"]
+  },
+  "security": {
+    "headline": "YOUR WALLET. YOUR RESPONSIBILITY.",
+    "body": "ACADEMY PRIME can teach you how to recognize risks, but no platform can guarantee that you will never encounter a scam.",
+    "rules": ["Protect your private keys.", "Never share your seed phrase.", "Verify websites before connecting your wallet.", "Check what you are signing.", "Be cautious with unexpected messages.", "Never trust guaranteed-profit promises.", "Research before sending funds."],
+    "disclaimer": "ACADEMY PRIME provides educational information and does not guarantee investment results or protect users from every possible scam."
+  },
+  "finalCta": {
+    "headline": "KNOWLEDGE IS YOUR FIRST DEFENSE.",
+    "body": "The crypto space will continue to evolve. New technologies will appear. New opportunities will appear. And new risks will appear. You cannot control everything that happens in crypto. But you can control how prepared you are. Start learning today.",
+    "ctaPrimary": "START LEARNING",
+    "ctaSecondary": "EXPLORE COURSES",
+    "closing": "ACADEMY PRIME — Learn to Earn."
+  },
+  "journeyMap": {
+    "eyebrow": "The Crypto Safety Journey",
+    "heading": "One step at a time",
+    "steps": ["ENTER CRYPTO", "LEARN THE BASICS", "UNDERSTAND THE RISKS", "VERIFY INFORMATION", "PROTECT YOUR WALLET", "MAKE INFORMED CHOICES", "KEEP LEARNING"]
+  }
+}

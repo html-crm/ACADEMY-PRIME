@@ -1,0 +1,58 @@
+{
+  "hero": {
+    "eyebrow": "Web3 education, verified",
+    "headline": "Learn crypto. Earn rewards.",
+    "subhead": "Learn about crypto, blockchain, Web3, DeFi and more. Complete educational content and earn rewards through ACADEMY PRIME.",
+    "ctaPrimary": "Start Learning",
+    "ctaSecondary": "Explore Courses",
+    "transcriptTitle": "Verified Transcript",
+    "transcriptSubtitle": "Every completed lesson, recorded on-chain",
+    "transcriptFooter": "Rewarded in ACADEMY PRIME tokens"
+  },
+  "howItWorks": {
+    "eyebrow": "How it works",
+    "heading": "From lesson to reward, in four steps",
+    "steps": [
+      {
+        "number": "01",
+        "title": "Choose a Lesson",
+        "description": "Browse courses across blockchain, DeFi, trading, and security, sorted by level."
+      },
+      {
+        "number": "02",
+        "title": "Watch & Learn",
+        "description": "Follow along with expert-taught video lessons at your own pace."
+      },
+      {
+        "number": "03",
+        "title": "Complete the Lesson",
+        "description": "Finish the lesson and pass a short comprehension check to confirm completion."
+      },
+      {
+        "number": "04",
+        "title": "Earn Rewards",
+        "description": "Receive ACADEMY PRIME tokens for verified, completed lessons."
+      }
+    ]
+  },
+  "featuredCourses": {
+    "eyebrow": "Featured courses",
+    "heading": "Start where it matters",
+    "viewAll": "View all courses",
+    "lessons": "lessons",
+    "enrolled": "learners enrolled",
+    "difficulty": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced"
+    },
+    "categories": {
+      "blockchain-basics": "Blockchain",
+      "trading": "Trading",
+      "defi": "DeFi",
+      "security": "Security",
+      "web3-development": "Web3 Dev",
+      "nft": "NFTs"
+    }
+  }
+}

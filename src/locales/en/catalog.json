@@ -1,0 +1,33 @@
+{
+  "courses": {
+    "eyebrow": "Academy",
+    "headline": "LEARN. BUILD KNOWLEDGE. EARN REWARDS.",
+    "subhead": "Explore structured crypto education created to help you understand the ecosystem from the fundamentals to advanced topics.",
+    "searchPlaceholder": "Search lessons…",
+    "difficulty": "Difficulty",
+    "allDifficulties": "All levels",
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced",
+    "language": "Language",
+    "allLanguages": "All languages",
+    "sort": "Sort by",
+    "sortNewest": "Newest",
+    "sortReward": "Highest reward",
+    "results": "lessons",
+    "empty": "No lessons match your filters yet.",
+    "loading": "Loading lessons…",
+    "min": "min",
+    "rewardLabel": "Reward",
+    "watchCta": "Watch lesson"
+  },
+  "shorts": {
+    "eyebrow": "Quick learning",
+    "headline": "CRYPTO IN UNDER 60 SECONDS.",
+    "subhead": "Fast, useful crypto education — one concept at a time.",
+    "maxDurationNote": "Maximum duration: 60 seconds",
+    "empty": "No short videos published yet. Check back soon.",
+    "sec": "sec",
+    "nextHint": "Scroll for the next short"
+  }
+}
