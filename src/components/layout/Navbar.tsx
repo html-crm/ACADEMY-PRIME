@@ -21,6 +21,7 @@ export function Navbar({ locale, dict }: NavbarProps) {
     [nav.home, `/${locale}`],
     [nav.learn, `/${locale}/learn`],
     [nav.courses, `/${locale}/courses`],
+    [nav.longVideos, `/${locale}/videos`],
     [nav.shortVideos, `/${locale}/shorts`],
     [nav.experts, `/${locale}/experts`],
     [nav.rewards, `/${locale}/rewards`],

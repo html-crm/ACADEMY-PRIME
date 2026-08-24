@@ -209,6 +209,9 @@ export type AdminStats = {
   videos_published: number;
   rewards_available: number;
   rewards_claimed: number;
+  tokens_pending: string;
+  tokens_claimed: string;
+  tokens_issued: string;
 };
 
 export type ExpertProfile = {
@@ -284,6 +287,7 @@ export const api = {
     format?: string;
     sort?: string;
     page?: number;
+    page_size?: number;
   }) => request<PageOf<VideoPublic>>(`/content/videos?${qs(params)}`),
   getVideo: (id: string) => request<VideoPublic>(`/content/videos/${id}`),
   listCategories: () => request<{ id: string; name: string; slug: string }[]>("/content/categories"),
