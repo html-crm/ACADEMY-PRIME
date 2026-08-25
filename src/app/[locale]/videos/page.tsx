@@ -91,7 +91,7 @@ export default function LongVideosPage({ params }: { params: { locale: string } 
                     </span>
                   </div>
                   <p className="mt-2 inline-block rounded-full bg-brass-400/15 px-2.5 py-1 text-xs font-semibold text-brass-600">
-                    +{Number(v.effective_reward)} APT · {t.reward}
+                    +{Number(v.effective_reward)} ACAD-P · {t.reward}
                   </p>
                 </div>
               </Link>

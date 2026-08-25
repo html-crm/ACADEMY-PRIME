@@ -130,7 +130,7 @@ export function CoursesExplorer({ copy, locale }: CoursesExplorerProps) {
                     <div className="mt-auto flex items-center justify-between border-t border-line pt-4 text-xs text-ink-500">
                       <span>{formatDuration(video.durationSeconds)}</span>
                       <span className="font-semibold text-emerald-700">
-                        +{video.reward.toLocaleString()} APT
+                        +{video.reward.toLocaleString()} ACAD-P
                       </span>
                     </div>
                     <span className="text-xs font-semibold text-brass-600">{copy.watchCta} →</span>

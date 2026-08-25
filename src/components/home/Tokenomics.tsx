@@ -7,15 +7,15 @@ const COPY = {
   en: {
     eyebrow: "TRANSPARENCY",
     heading: "Tokenomics",
-    subhead: "How every APT token is allocated.",
-    centerTop: "APT",
+    subhead: "How every ACAD-P token is allocated.",
+    centerTop: "ACAD-P",
     caption: "Total supply distribution",
   },
   ar: {
     eyebrow: "الشفافية",
     heading: "اقتصاد الرمز",
-    subhead: "كيف يتم توزيع كل رمز APT.",
-    centerTop: "APT",
+    subhead: "كيف يتم توزيع كل رمز ACAD-P.",
+    centerTop: "ACAD-P",
     caption: "توزيع المعروض الكلي",
   },
 };

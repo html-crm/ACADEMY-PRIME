@@ -48,7 +48,7 @@ export default async function WatchPage({
                   </div>
                   <div className="min-w-0 flex-1">
                     <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-ink-950">{item.title}</h3>
-                    <p className="mt-1 text-xs text-emerald-700">+{item.reward} APT</p>
+                    <p className="mt-1 text-xs text-emerald-700">+{item.reward} ACAD-P</p>
                   </div>
                 </article>
               </Link>

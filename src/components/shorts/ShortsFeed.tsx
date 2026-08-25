@@ -133,7 +133,7 @@ export function ShortsFeed({ copy, locale }: ShortsFeedProps) {
                   <div className="mt-2 flex items-center gap-3 text-xs text-white/70">
                     <span>{video.durationSeconds}s</span>
                     <span>·</span>
-                    <span className="font-semibold text-brass-300">+{video.reward} APT</span>
+                    <span className="font-semibold text-brass-300">+{video.reward} ACAD-P</span>
                   </div>
                   {/* Watch progress */}
                   <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/20">
@@ -155,7 +155,7 @@ export function ShortsFeed({ copy, locale }: ShortsFeedProps) {
                 href={`/${locale}/dashboard`}
                 className="absolute end-4 top-6 rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-card"
               >
-                ✓ +{video.reward} APT
+                ✓ +{video.reward} ACAD-P
               </Link>
             )}
           </section>

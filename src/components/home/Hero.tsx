@@ -74,7 +74,7 @@ export function Hero({ copy }: HeroProps) {
                         : "text-[13px] font-semibold text-emerald-700"
                     }
                   >
-                    +{row.reward} APT
+                    +{row.reward} ACAD-P
                   </span>
                 </li>
               ))}
