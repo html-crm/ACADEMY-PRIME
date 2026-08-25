@@ -159,7 +159,7 @@ export function WatchClient({ video, locale }: { video: CatalogVideo; locale: st
   }, [video?.id, authed]);
 
   const pct = Number(result?.current_percentage ?? 0);
-  const required = video.requiredWatchPercentage || 90;
+  const required = video.requiredWatchPercentage || 85;
   const completed = earned || Boolean(result?.completed);
 
   return (

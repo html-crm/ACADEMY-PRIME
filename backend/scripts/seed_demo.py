@@ -3,12 +3,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from decimal import Decimal
+
 from app.core.security import hash_password
 from app.db.session import SessionLocal, engine
 from app.db.base import Base
 from app.models.content import Category, Video
 from app.models.enums import ContentStatus, Difficulty, VideoFormat, VideoProvider
 from app.models.expert import Expert
+from app.models.reward import RewardSettings
 from app.models.user import User, UserProfile
 
 DEMO_VIDEOS = [
@@ -36,6 +39,17 @@ def seed() -> None:
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
+        settings = db.query(RewardSettings).filter(RewardSettings.id == 1).first()
+        if settings is None:
+            settings = RewardSettings(
+                id=1,
+                default_video_reward=Decimal("0.001"),
+                default_watch_percentage=Decimal("85"),
+                daily_claim_limit=5,
+            )
+            db.add(settings)
+            db.commit()
+
         admin = db.query(User).filter(User.email == ADMIN_EMAIL).first()
         if admin is None:
             admin = User(

@@ -62,9 +62,9 @@ class RewardSettings(TimestampMixin, Base):
     __tablename__ = "reward_settings"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
-    default_video_reward: Mapped[Decimal] = mapped_column(Numeric(24, 9), default=0, nullable=False)
+    default_video_reward: Mapped[Decimal] = mapped_column(Numeric(24, 9), default=Decimal("0.001"), nullable=False)
     course_bonus_reward: Mapped[Decimal] = mapped_column(Numeric(24, 9), default=0, nullable=False)
-    default_watch_percentage: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=90, nullable=False)
+    default_watch_percentage: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=Decimal("85"), nullable=False)
     daily_claim_limit: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
     min_account_age_days: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     expert_per_video_reward: Mapped[Decimal | None] = mapped_column(Numeric(24, 9))
