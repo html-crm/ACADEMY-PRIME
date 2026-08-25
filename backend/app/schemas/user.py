@@ -1,8 +1,13 @@
 from datetime import datetime
 from decimal import Decimal
+from re import sub as _resub
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+def _strip_html(v: str) -> str:
+    return _resub(r"<[^>]+>", "", v).strip()
 
 
 class ProfileUpdateIn(BaseModel):
@@ -11,6 +16,11 @@ class ProfileUpdateIn(BaseModel):
     avatar_url: str | None = Field(default=None, max_length=500)
     locale: str | None = Field(default=None, pattern=r"^[a-z]{2}(-[A-Za-z]{2})?$")
     country_code: str | None = Field(default=None, min_length=2, max_length=2)
+
+    @field_validator("display_name", "bio")
+    @classmethod
+    def sanitize_html(cls, v: str | None) -> str | None:
+        return _strip_html(v) if v is not None else v
 
 
 class ProfileOut(BaseModel):

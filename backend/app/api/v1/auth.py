@@ -42,7 +42,7 @@ def login(
 
 
 @router.post("/refresh", response_model=TokenPair)
-def refresh(data: RefreshIn, db: DbSession) -> TokenPair:
+def refresh(data: RefreshIn, db: DbSession, _rl: None = Depends(rate_limit_auth)) -> TokenPair:
     access_token, refresh_token = auth_service.rotate_refresh_token(db, data.refresh_token)
     return TokenPair(access_token=access_token, refresh_token=refresh_token)
 

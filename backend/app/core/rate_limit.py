@@ -25,6 +25,7 @@ class SlidingWindowLimiter:
 
 
 _auth_limiter = SlidingWindowLimiter()
+_heartbeat_limiter = SlidingWindowLimiter()
 
 
 async def rate_limit_auth(request: Request) -> None:
@@ -33,3 +34,7 @@ async def rate_limit_auth(request: Request) -> None:
     settings = get_settings()
     client_ip = request.client.host if request.client else "unknown"
     _auth_limiter.check(f"auth:{client_ip}", settings.RATE_LIMIT_AUTH_PER_MINUTE)
+
+
+def rate_limit_heartbeat(user_id: str) -> None:
+    _heartbeat_limiter.check(f"hb:{user_id}", limit=6, window_seconds=60.0)

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import NotificationChannel
 
@@ -20,4 +20,4 @@ class NotificationOut(BaseModel):
 
 
 class MarkReadIn(BaseModel):
-    ids: list[UUID]
+    ids: list[UUID] = Field(max_length=100)

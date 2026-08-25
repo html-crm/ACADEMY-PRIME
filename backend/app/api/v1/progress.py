@@ -6,6 +6,8 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 
 from app.core.deps import CurrentUser, DbSession
+from app.core.config import get_settings
+from app.core.rate_limit import rate_limit_heartbeat
 from app.models.content import Video
 from app.models.enums import ContentStatus, VerificationLevel
 from app.models.progress import VideoCompletion, VideoProgress
@@ -19,8 +21,9 @@ from app.services.reward_service import get_reward_settings, issue_completion_re
 router = APIRouter(prefix="/progress", tags=["progress"])
 
 SEEK_TOLERANCE_SECONDS = 5.0
-MAX_HEARTBEAT_GAP_SECONDS = 3600.0
+MAX_HEARTBEAT_GAP_SECONDS = 120.0
 ACCUMULATED_TIME_FACTOR = 0.8
+FIRST_BEAT_MAX_CREDIT = 10.0
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -38,6 +41,14 @@ class CompletionResult:
 
 @router.post("/heartbeat", response_model=HeartbeatOut)
 def heartbeat(data: HeartbeatIn, user: CurrentUser, db: DbSession) -> HeartbeatOut:
+    rate_limit_heartbeat(str(user.id))
+
+    if user.risk_score >= get_settings().RISK_SCORE_REWARD_THRESHOLD:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            detail={"code": "high_risk_account", "message": "Account flagged. Contact support."},
+        )
+
     video = db.get(Video, data.video_id)
     if video is None or video.status != ContentStatus.PUBLISHED:
         raise HTTPException(
@@ -77,8 +88,10 @@ def heartbeat(data: HeartbeatIn, user: CurrentUser, db: DbSession) -> HeartbeatO
     position = int(min(max(data.position_seconds, 0), video.duration_seconds))
     delta = max(0, position - row.last_position_seconds)
 
-    if row.heartbeat_count == 0:
-        credited = float(delta)
+    if data.state == "paused":
+        credited = 0.0
+    elif row.heartbeat_count == 0:
+        credited = min(float(delta), FIRST_BEAT_MAX_CREDIT)
     elif delta > elapsed + SEEK_TOLERANCE_SECONDS:
         user.risk_score = min(user.risk_score + 1, 100)
         credited = min(delta, max(elapsed, 0.0))
@@ -139,7 +152,10 @@ def heartbeat(data: HeartbeatIn, user: CurrentUser, db: DbSession) -> HeartbeatO
                     )
                 )
             if completion is not None:
-                entry = issue_completion_reward(db, user.id, completion, video)
+                if user.risk_score < get_settings().RISK_SCORE_REWARD_THRESHOLD:
+                    entry = issue_completion_reward(db, user.id, completion, video)
+                else:
+                    entry = None
                 if entry is not None:
                     reward_issued = True
                     notification_service.notify(

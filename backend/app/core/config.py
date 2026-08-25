@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "dev-only-change-me-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 14
+    RISK_SCORE_REWARD_THRESHOLD: int = 50
 
     DATABASE_URL: str = "sqlite:///./academic_prime.db"
 
@@ -39,4 +40,7 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    s = Settings()
+    if s.ENVIRONMENT != "development" and s.SECRET_KEY == "dev-only-change-me-in-production":
+        raise RuntimeError("SECRET_KEY must be set to a secure value in production!")
+    return s

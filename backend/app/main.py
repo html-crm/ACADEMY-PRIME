@@ -8,12 +8,13 @@ from app.core.config import get_settings
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    is_prod = settings.ENVIRONMENT == "production"
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
         description="ACADEMIC PRIME — Learn-to-Earn crypto education platform API.",
-        docs_url="/docs",
-        openapi_url="/openapi.json",
+        docs_url=None if is_prod else "/docs",
+        openapi_url=None if is_prod else "/openapi.json",
     )
     app.add_middleware(
         CORSMiddleware,
