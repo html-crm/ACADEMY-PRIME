@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Dictionary } from "@/lib/i18n";
 import { Locale } from "@/types/user";
 import { Button } from "@/components/ui/Button";
@@ -29,18 +30,10 @@ export function Navbar({ locale, dict }: NavbarProps) {
   ];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line/70 bg-paper-50/90 backdrop-blur-md">
-      <div className="container-content flex h-[76px] items-center justify-between">
+    <header className="sticky top-0 z-30 border-b border-line bg-paper-50 shadow-card">
+      <div className="container-content flex h-16 items-center justify-between md:h-[76px]">
         <Link href={`/${locale}`} className="flex items-center gap-2.5">
-          <span
-            aria-hidden
-            className="flex h-8 w-8 items-center justify-center rounded-md bg-ink-950 font-display text-sm text-brass-300"
-          >
-            A
-          </span>
-          <span className="font-display text-[15px] font-medium tracking-wide text-ink-950">
-            {brand.name}
-          </span>
+          <Image src="/logo.png" alt="Academy Prime" width={40} height={40} className="h-10 w-auto" priority />
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">
@@ -89,7 +82,15 @@ export function Navbar({ locale, dict }: NavbarProps) {
               </Button>
             </>
           )}
-          <MobileMenu locale={locale} nav={nav} />
+          <MobileMenu
+            locale={locale}
+            nav={nav}
+            language={language}
+            isLoggedIn={Boolean(me)}
+            isAdmin={me?.role === "admin"}
+            username={me?.username}
+            onLogout={logout}
+          />
         </div>
       </div>
     </header>

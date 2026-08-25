@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Dictionary } from "@/lib/i18n";
 import { Locale } from "@/types/user";
 
@@ -6,6 +7,12 @@ interface FooterProps {
   locale: Locale;
   dict: Dictionary;
 }
+
+const SOCIALS = [
+  { label: "X", href: "https://x.com/tokens100_CTO", icon: "X" },
+  { label: "Telegram", href: "https://t.me/Tokns100_CTO", icon: "TG" },
+  { label: "Instagram", href: "https://www.academy-prime.site/en", icon: "IG" },
+];
 
 export function Footer({ locale, dict }: FooterProps) {
   const { footer, brand, nav } = dict.common;
@@ -15,7 +22,8 @@ export function Footer({ locale, dict }: FooterProps) {
       heading: footer.product,
       links: [
         [nav.courses, `/${locale}/courses`],
-        [nav.shortVideos, `/${locale}/short-videos`],
+        [nav.shortVideos, `/${locale}/shorts`],
+        [nav.longVideos, `/${locale}/videos`],
         [nav.rewards, `/${locale}/rewards`],
       ],
     },
@@ -24,6 +32,7 @@ export function Footer({ locale, dict }: FooterProps) {
       links: [
         [nav.about, `/${locale}/about`],
         [nav.experts, `/${locale}/experts`],
+        [nav.learn, `/${locale}/learn`],
       ],
     },
     {
@@ -39,10 +48,25 @@ export function Footer({ locale, dict }: FooterProps) {
     <footer className="border-t border-line bg-ink-950 text-paper-100">
       <div className="container-content grid gap-12 py-16 md:grid-cols-[1.3fr_repeat(3,1fr)]">
         <div>
-          <span className="font-display text-lg text-paper-50">{brand.name}</span>
+          <Image src="/logo.png" alt="Academy Prime" width={48} height={48} className="h-12 w-auto brightness-0 invert" />
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-paper-100/60">
             {brand.tagline}
           </p>
+
+          <div className="mt-6 flex gap-3">
+            {SOCIALS.map((s) => (
+              <a
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={s.label}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-xs font-semibold text-paper-100/70 transition-colors hover:border-brass-400 hover:text-brass-400"
+              >
+                {s.icon}
+              </a>
+            ))}
+          </div>
         </div>
 
         {columns.map((column) => (
