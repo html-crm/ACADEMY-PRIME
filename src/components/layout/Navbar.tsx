@@ -34,6 +34,9 @@ export function Navbar({ locale, dict }: NavbarProps) {
       <div className="container-content flex h-16 items-center justify-between md:h-[76px]">
         <Link href={`/${locale}`} className="flex items-center gap-2.5">
           <Image src="/logo.png" alt="Academy Prime" width={40} height={40} className="h-10 w-auto" priority />
+          <span className="font-display text-[15px] font-medium tracking-wide text-ink-950">
+            {brand.name}
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">
