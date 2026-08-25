@@ -20,12 +20,12 @@ const COPY = {
   },
 };
 
-const SLICES: Array<{ pct: number; color: string; en: string; ar: string }> = [
-  { pct: 30, color: "#C9A227", en: "Rewards", ar: "المكافآت" },
-  { pct: 20, color: "#1F2933", en: "Old Token Distribution", ar: "توزيع العملة القديمة" },
+const SLICES: Array<{ pct: number; color: string; en: string; ar: string; solscan?: string }> = [
+  { pct: 30, color: "#C9A227", en: "Rewards", ar: "المكافآت", solscan: "https://solscan.io/account/HtXUEKD8nvzasa96JMgJSJ92cBRTAa3EAcB7wLAm5Yzz" },
+  { pct: 20, color: "#1F2933", en: "Old Token Distribution", ar: "توزيع العملة القديمة", solscan: "https://solscan.io/account/6XTiJVSFzPEuuJ8B3qFbJ2cfxgGHmvJCfyexgTYmHAFz" },
   { pct: 20, color: "#2F80ED", en: "Pool", ar: "المجمع" },
   { pct: 10, color: "#27AE60", en: "Marketing", ar: "التسويق" },
-  { pct: 10, color: "#9B51E0", en: "Treasury", ar: "الخزينة" },
+  { pct: 10, color: "#9B51E0", en: "Treasury", ar: "الخزينة", solscan: "https://solscan.io/account/8f4nELPoMo8yozfYo9RM3vmzDaTEsSBuqmnNv4wmyXVk" },
   { pct: 10, color: "#EB5757", en: "Team", ar: "الفريق" },
 ];
 
@@ -142,7 +142,19 @@ export function Tokenomics({ locale }: { locale: Locale }) {
                   className="h-3.5 w-3.5 shrink-0 rounded-full"
                   style={{ backgroundColor: s.color }}
                 />
-                <span className="text-sm font-medium text-ink-800">{rtl ? s.ar : s.en}</span>
+                {s.solscan ? (
+                  <a
+                    href={s.solscan}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-sm font-medium text-brass-600 underline decoration-brass-400/40 transition-colors hover:text-brass-500 hover:decoration-brass-400"
+                  >
+                    {rtl ? s.ar : s.en} ↗
+                  </a>
+                ) : (
+                  <span className="text-sm font-medium text-ink-800">{rtl ? s.ar : s.en}</span>
+                )}
                 <span className="ms-auto font-display text-base font-semibold text-ink-950">{s.pct}%</span>
               </li>
             ))}
@@ -150,6 +162,7 @@ export function Tokenomics({ locale }: { locale: Locale }) {
         </div>
 
         <p className="mt-10 text-center text-xs uppercase tracking-wide text-ink-400">{t.caption}</p>
+        <p className="mt-2 text-center text-xs text-ink-300">✓ Verified on Solscan · On-chain allocations</p>
       </div>
     </section>
   );

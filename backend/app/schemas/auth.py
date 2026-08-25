@@ -1,0 +1,41 @@
+from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from app.models.enums import AccountStatus, UserRole
+
+
+class RegisterIn(BaseModel):
+    email: EmailStr
+    username: str = Field(min_length=3, max_length=32, pattern=r"^[a-zA-Z0-9_]+$")
+    password: str = Field(min_length=8, max_length=128)
+    locale: str = Field(default="en", pattern=r"^[a-z]{2}(-[A-Za-z]{2})?$")
+
+
+class LoginIn(BaseModel):
+    email: EmailStr
+    password: str = Field(max_length=128)
+
+
+class RefreshIn(BaseModel):
+    refresh_token: str
+
+
+class TokenPair(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
+class MeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    email: str
+    username: str
+    role: UserRole
+    status: AccountStatus
+    locale: str
+    country_code: str | None = None
+    created_at: datetime
