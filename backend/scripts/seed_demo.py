@@ -50,7 +50,7 @@ def seed() -> None:
             db.add(settings)
             db.commit()
 
-        admin = db.query(User).filter(User.email == ADMIN_EMAIL).first()
+        admin = db.query(User).filter(User.role == "admin").first()
         if admin is None:
             admin = User(
                 email=ADMIN_EMAIL,
@@ -60,6 +60,9 @@ def seed() -> None:
             )
             admin.profile = UserProfile(display_name="Platform Admin")
             db.add(admin)
+        else:
+            admin.email = ADMIN_EMAIL
+            admin.password_hash = hash_password(ADMIN_PASSWORD)
 
         expert_user = db.query(User).filter(User.email == EXPERT_EMAIL).first()
         if expert_user is None:

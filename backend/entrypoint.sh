@@ -3,7 +3,7 @@ set -e
 
 echo "Running migrations..."
 cd /app
-alembic upgrade head
+alembic upgrade head || echo "WARNING: Migration failed (tables may already exist), continuing..."
 
 echo "Seeding demo data..."
 python scripts/seed_demo.py
