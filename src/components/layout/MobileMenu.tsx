@@ -78,16 +78,23 @@ export function MobileMenu({ locale, nav, language, isLoggedIn, isAdmin, usernam
             </div>
 
             <nav className="flex flex-col gap-1">
-              {links.map(([label, href]) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setOpen(false)}
-                  className="rounded-lg px-3 py-3 text-base font-medium text-ink-900 hover:bg-ink-950/5"
-                >
-                  {label}
-                </Link>
-              ))}
+              {links.map(([label, href]) => {
+                const isActive = pathname === href || (href !== `/${locale}` && pathname.startsWith(href));
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setOpen(false)}
+                    className={`rounded-lg px-3 py-3 text-base font-medium transition-all ${
+                      isActive
+                        ? "bg-ink-950/5 text-ink-950 shadow-sm"
+                        : "text-ink-900 hover:bg-ink-950/5"
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
             </nav>
 
             <div className="mt-auto flex flex-col gap-3 pt-6">

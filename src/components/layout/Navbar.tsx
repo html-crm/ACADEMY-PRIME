@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { Dictionary } from "@/lib/i18n";
 import { Locale } from "@/types/user";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +18,7 @@ interface NavbarProps {
 export function Navbar({ locale, dict }: NavbarProps) {
   const { nav, language, brand } = dict.common;
   const { me, logout } = useSession();
+  const pathname = usePathname();
 
   const links: Array<[string, string]> = [
     [nav.home, `/${locale}`],
@@ -40,15 +42,22 @@ export function Navbar({ locale, dict }: NavbarProps) {
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">
-          {links.map(([label, href]) => (
-            <Link
-              key={href}
-              href={href}
-              className="text-[13.5px] font-medium text-ink-700 transition-colors hover:text-ink-950"
-            >
-              {label}
-            </Link>
-          ))}
+          {links.map(([label, href]) => {
+            const isActive = pathname === href || (href !== `/${locale}` && pathname.startsWith(href));
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`rounded-full px-3 py-1 text-[13.5px] font-medium transition-all ${
+                  isActive
+                    ? "bg-ink-950/5 text-ink-950 shadow-sm"
+                    : "text-ink-700 hover:text-ink-950"
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-3">
