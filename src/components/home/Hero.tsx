@@ -31,6 +31,16 @@ export function Hero({ copy }: HeroProps) {
               {copy.ctaSecondary}
             </Button>
           </div>
+          <div className="mt-7 flex justify-center md:justify-start">
+            <a
+              href="https://dexscreener.com/solana/fcpxrzsme4gaopjjurpyzkgjrtfgecxypua88178yxwx"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center rounded-full bg-brass-400 px-6 py-2.5 text-sm font-bold tracking-wide text-ink-950 shadow-card transition-colors hover:bg-brass-300"
+            >
+              BUY NOW
+            </a>
+          </div>
         </div>
 
         {/* Signature element: a verified-transcript card — the education
