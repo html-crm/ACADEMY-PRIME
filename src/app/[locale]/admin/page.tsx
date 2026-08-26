@@ -85,6 +85,15 @@ const COPY = {
     submitPost: "Submit for review",
     posting: "Submitting…",
     postOk: "Created! Approve and publish it from the Videos tab.",
+    tabPassword: "Password",
+    currentPassword: "Current password",
+    newPassword: "New password",
+    confirmPassword: "Confirm new password",
+    passwordMismatch: "Passwords do not match",
+    passwordSuccess: "Password updated!",
+    passwordError: "Failed to update password.",
+    changePassword: "Update Password",
+    passwordsNoMatch: "Passwords do not match",
   },
   ar: {
     heading: "لوحة المشرف",
@@ -157,6 +166,15 @@ const COPY = {
     submitPost: "إرسال للمراجعة",
     posting: "جارٍ الإرسال…",
     postOk: "تم الإنشاء! قبوله وانشره من تبويب الفيديوهات.",
+    tabPassword: "كلمة المرور",
+    currentPassword: "كلمة المرور الحالية",
+    newPassword: "كلمة المرور الجديدة",
+    confirmPassword: "تأكيد كلمة المرور الجديدة",
+    passwordMismatch: "كلمتا المرور غير متطابقتين",
+    passwordSuccess: "تم تحديث كلمة المرور!",
+    passwordError: "فشل تحديث كلمة المرور.",
+    changePassword: "تحديث كلمة المرور",
+    passwordsNoMatch: "كلمتا المرور غير متطابقتين",
   },
 };
 
@@ -171,7 +189,7 @@ const TONE: Record<string, string> = {
   suspended: "bg-red-50 text-red-600",
 };
 
-const TABS = ["overview", "post", "videos", "experts", "users", "settings"] as const;
+const TABS = ["overview", "post", "videos", "experts", "users", "settings", "password"] as const;
 type Tab = (typeof TABS)[number];
 
 const inputCls =
@@ -202,6 +220,8 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
     language: "en",
   });
   const [postState, setPostState] = useState<"idle" | "busy" | "ok">("idle");
+  const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
+  const [passwordState, setPasswordState] = useState<"idle" | "busy" | "ok" | "error">("idle");
 
   const safeLoad = useCallback(
     async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
@@ -311,6 +331,24 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
     } catch (err) {
       setPostState("idle");
       setError(err instanceof ApiError ? err.message : t.loadError);
+    }
+  }
+
+  async function handleChangePassword() {
+    if (!passwordForm.current || !passwordForm.newPass) return;
+    if (passwordForm.newPass !== passwordForm.confirm) {
+      setPasswordState("error");
+      return;
+    }
+    setPasswordState("busy");
+    setError("");
+    try {
+      await api.changePassword(passwordForm.current, passwordForm.newPass);
+      setPasswordState("ok");
+      setPasswordForm({ current: "", newPass: "", confirm: "" });
+    } catch (err) {
+      setPasswordState("error");
+      setError(err instanceof ApiError ? err.message : t.passwordError);
     }
   }
 
@@ -635,6 +673,56 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                   {postState === "busy" ? t.posting : t.submitPost}
                 </Button>
               </div>
+            </div>
+          </section>
+        )}
+
+        {tab === "password" && (
+          <section className="mt-8 max-w-xl rounded-xl border border-line bg-paper-50 p-6">
+            <h2 className="font-display text-lg font-semibold text-ink-950">{t.tabPassword}</h2>
+            {passwordState === "ok" && (
+              <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {t.passwordSuccess}
+              </div>
+            )}
+            <label className="mt-4 block">
+              <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.currentPassword}</span>
+              <input
+                type="password"
+                value={passwordForm.current}
+                onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                className={inputCls}
+              />
+            </label>
+            <label className="mt-4 block">
+              <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.newPassword}</span>
+              <input
+                type="password"
+                value={passwordForm.newPass}
+                onChange={(e) => setPasswordForm({ ...passwordForm, newPass: e.target.value })}
+                className={inputCls}
+              />
+            </label>
+            <label className="mt-4 block">
+              <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.confirmPassword}</span>
+              <input
+                type="password"
+                value={passwordForm.confirm}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                className={inputCls}
+              />
+            </label>
+            {passwordState === "error" && (
+              <p className="mt-3 text-sm text-red-600">{t.passwordsNoMatch}</p>
+            )}
+            <div className="mt-5">
+              <Button
+                variant="primary"
+                onClick={() => { void handleChangePassword(); }}
+                disabled={passwordState === "busy"}
+              >
+                {t.changePassword}
+              </Button>
             </div>
           </section>
         )}
