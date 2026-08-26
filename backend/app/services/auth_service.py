@@ -121,3 +121,10 @@ def _revoke_all_sessions(db: Session, user_id, reason: str) -> None:
     for row in rows:
         row.revoked_at = now
     db.commit()
+
+
+def change_password(db: Session, user: User, current_password: str, new_password: str) -> None:
+    if not verify_password(current_password, user.password_hash):
+        raise AuthError("invalid_password", "Current password is incorrect.")
+    user.password_hash = hash_password(new_password)
+    db.commit()

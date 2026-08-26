@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from app.core.deps import CurrentUser, DbSession
 from app.core.rate_limit import rate_limit_auth
 from app.models.enums import AccountStatus
-from app.schemas.auth import LoginIn, MeOut, RefreshIn, RegisterIn, TokenPair
+from app.schemas.auth import ChangePasswordIn, LoginIn, MeOut, RefreshIn, RegisterIn, TokenPair
 from app.services import audit_service, auth_service, notification_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -55,3 +55,14 @@ def logout(data: RefreshIn, db: DbSession, user: CurrentUser) -> None:
 @router.get("/me", response_model=MeOut)
 def me(user: CurrentUser) -> MeOut:
     return MeOut.model_validate(user)
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    data: ChangePasswordIn,
+    request: Request,
+    db: DbSession,
+    user: CurrentUser,
+) -> None:
+    auth_service.change_password(db, user, data.current_password, data.new_password)
+    audit_service.log(db, "auth.change_password", actor=user, entity_type="user", entity_id=str(user.id), request=request)
