@@ -9,8 +9,8 @@ from sqlalchemy import func, select
 
 from app.core.deps import DbSession, RequireAdmin, require_roles
 from app.models.content import Category, Video
-from app.models.enums import ContentStatus, UserRole
-from app.services import audit_service, notification_service
+from app.models.enums import ContentStatus, UserRole, VideoFormat, Difficulty
+from app.services import audit_service, notification_service, video_service
 
 router = APIRouter(
     prefix="/admin",
@@ -198,3 +198,59 @@ def delete_category(category_id: UUID, request: Request, admin: RequireAdmin, db
     audit_service.log(
         db, "admin.category.deleted", actor=admin, entity_type="category", entity_id=str(category_id), request=request
     )
+
+
+class AdminVideoIn(BaseModel):
+    title: str = Field(min_length=5, max_length=200)
+    description: str | None = Field(default=None, max_length=5000)
+    source_url: str = Field(min_length=10, max_length=500)
+    duration_seconds: int = Field(gt=0, le=86400 * 4)
+    language: str = Field(default="en", pattern=r"^[a-z]{2}(-[A-Za-z]{2})?$")
+    difficulty: Difficulty = Difficulty.BEGINNER
+    format: VideoFormat = VideoFormat.LONG
+    tags: list[str] = Field(default_factory=list, max_length=20)
+
+
+@router.post("/videos", response_model=dict, status_code=status.HTTP_201_CREATED)
+def admin_create_video(
+    data: AdminVideoIn,
+    request: Request,
+    admin: RequireAdmin,
+    db: DbSession,
+) -> dict:
+    try:
+        provider, provider_video_id = video_service.detect_provider(data.source_url)
+    except ValueError:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "unsupported_video_url", "message": "Use a supported YouTube, Instagram or Vimeo URL."},
+        )
+    from app.models.expert import Expert
+    from app.models.user import User
+
+    user = db.scalar(select(User).where(User.role == "admin"))
+    expert = db.scalars(select(Expert).where(Expert.user_id == user.id)).first() if user else None
+    expert_id = expert.id if expert else None
+
+    video = Video(
+        expert_id=expert_id,
+        title=data.title.strip(),
+        slug=video_service.slugify(data.title),
+        description=data.description,
+        provider=provider,
+        source_url=data.source_url.strip(),
+        provider_video_id=provider_video_id,
+        thumbnail_url=video_service.extract_youtube_thumbnail(provider_video_id),
+        duration_seconds=data.duration_seconds,
+        language=data.language,
+        difficulty=data.difficulty,
+        format=data.format,
+        tags=data.tags,
+        status=ContentStatus.PUBLISHED,
+        published_at=datetime.now(timezone.utc),
+    )
+    db.add(video)
+    db.commit()
+    db.refresh(video)
+    audit_service.log(db, "admin.video.created", actor=admin, entity_type="video", entity_id=str(video.id), request=request)
+    return {"id": str(video.id), "title": video.title, "status": video.status.value}

@@ -385,4 +385,18 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ current_password, new_password }),
     }),
+
+  adminCreateVideo: (data: {
+    title: string;
+    description?: string;
+    source_url: string;
+    duration_seconds: number;
+    difficulty: string;
+    format: string;
+    language?: string;
+    tags?: string[];
+  }) => request<{ id: string; title: string; status: string }>("/admin/videos", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
 };

@@ -70,7 +70,8 @@ const COPY = {
     postSub: "Publish lessons or shorts directly as admin.",
     fTitle: "Title",
     fUrl: "Video URL (YouTube / Instagram)",
-    fDuration: "Duration in seconds",
+    fDurationMin: "Minutes",
+    fDurationSec: "Seconds",
     fDesc: "Description (optional)",
     fDifficulty: "Difficulty",
     beginner: "Beginner",
@@ -151,7 +152,8 @@ const COPY = {
     postSub: "انشر الدروس أو المقاطع مباشرة كمشرف.",
     fTitle: "العنوان",
     fUrl: "رابط الفيديو (يوتيوب / إنستغرام)",
-    fDuration: "المدة بالثواني",
+    fDurationMin: "الدقائق",
+    fDurationSec: "الثواني",
     fDesc: "الوصف (اختياري)",
     fDifficulty: "المستوى",
     beginner: "مبتدئ",
@@ -213,6 +215,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
   const [post, setPost] = useState({
     title: "",
     source_url: "",
+    duration_minutes: "",
     duration_seconds: "",
     description: "",
     difficulty: "beginner",
@@ -312,12 +315,14 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
   }
 
   async function submitPost() {
-    const dur = Number(post.duration_seconds);
-    if (!post.title.trim() || !post.source_url.trim() || !dur || dur <= 0) return;
+    const mins = Number(post.duration_minutes) || 0;
+    const secs = Number(post.duration_seconds) || 0;
+    const dur = mins * 60 + secs;
+    if (!post.title.trim() || !post.source_url.trim() || dur <= 0) return;
     setPostState("busy");
     setError("");
     try {
-      await api.submitVideo({
+      await api.adminCreateVideo({
         title: post.title.trim(),
         source_url: post.source_url.trim(),
         duration_seconds: dur,
@@ -327,7 +332,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
         language: post.language,
       });
       setPostState("ok");
-      setPost({ title: "", source_url: "", duration_seconds: "", description: "", difficulty: "beginner", format: "long", language: "en" });
+      setPost({ title: "", source_url: "", duration_minutes: "", duration_seconds: "", description: "", difficulty: "beginner", format: "long", language: "en" });
     } catch (err) {
       setPostState("idle");
       setError(err instanceof ApiError ? err.message : t.loadError);
@@ -630,17 +635,21 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
               </label>
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fDuration}</span>
-                  <input type="number" min={1} value={post.duration_seconds} onChange={(e) => setPost({ ...post, duration_seconds: e.target.value })} className={inputCls} />
+                  <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fDurationMin}</span>
+                  <input type="number" min={0} value={post.duration_minutes} onChange={(e) => setPost({ ...post, duration_minutes: e.target.value })} className={inputCls} placeholder="0" />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fFormat}</span>
-                  <select value={post.format} onChange={(e) => setPost({ ...post, format: e.target.value })} className={inputCls}>
-                    <option value="long">{t.longF}</option>
-                    <option value="short">{t.shortF}</option>
-                  </select>
+                  <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fDurationSec}</span>
+                  <input type="number" min={0} max={59} value={post.duration_seconds} onChange={(e) => setPost({ ...post, duration_seconds: e.target.value })} className={inputCls} placeholder="0" />
                 </label>
               </div>
+              <label className="mt-4 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fFormat}</span>
+                <select value={post.format} onChange={(e) => setPost({ ...post, format: e.target.value })} className={inputCls}>
+                  <option value="long">{t.longF}</option>
+                  <option value="short">{t.shortF}</option>
+                </select>
+              </label>
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <label className="block">
                   <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fDifficulty}</span>
