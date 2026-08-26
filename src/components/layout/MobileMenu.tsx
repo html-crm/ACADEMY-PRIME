@@ -109,6 +109,16 @@ export function MobileMenu({ locale, nav, language, isLoggedIn, isAdmin, usernam
                 ))}
               </div>
 
+              <a
+                href="https://dexscreener.com/solana/fcpxrzsme4gaopjjurpyzkgjrtfgecxypua88178yxwx"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-center rounded-full bg-brass-400 px-4 py-2.5 text-sm font-bold tracking-wide text-ink-950 shadow-card"
+              >
+                BUY NOW
+              </a>
+
               {isLoggedIn ? (
                 <>
                   {isAdmin && (

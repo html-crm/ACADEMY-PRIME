@@ -11,7 +11,7 @@ export const locales: LocaleConfig[] = [
   { code: "ar", label: "Arabic", nativeLabel: "العربية", dir: "rtl" },
 ];
 
-export const defaultLocale: Locale = "en";
+export const defaultLocale: Locale = "ar";
 
 export function isLocale(value: string): value is Locale {
   return locales.some((locale) => locale.code === value);

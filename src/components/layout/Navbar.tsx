@@ -52,6 +52,14 @@ export function Navbar({ locale, dict }: NavbarProps) {
         </nav>
 
         <div className="flex items-center gap-3">
+          <a
+            href="https://dexscreener.com/solana/fcpxrzsme4gaopjjurpyzkgjrtfgecxypua88178yxwx"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden rounded-full bg-brass-400 px-4 py-2 text-xs font-bold tracking-wide text-ink-950 shadow-card transition-colors hover:bg-brass-300 md:inline-flex"
+          >
+            BUY NOW
+          </a>
           <div className="hidden md:block">
             <LanguageSwitcher currentLocale={locale} label={language.label} />
           </div>
