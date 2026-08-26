@@ -50,7 +50,7 @@ export function Navbar({ locale, dict }: NavbarProps) {
                 href={href}
                 className={`rounded-full px-3 py-1 text-[13.5px] font-medium transition-all ${
                   isActive
-                    ? "bg-ink-950/5 text-ink-950 shadow-sm"
+                    ? "bg-ink-950/5 text-ink-950 shadow-navActive"
                     : "text-ink-700 hover:text-ink-950"
                 }`}
               >

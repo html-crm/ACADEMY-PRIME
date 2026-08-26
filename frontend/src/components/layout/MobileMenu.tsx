@@ -87,7 +87,7 @@ export function MobileMenu({ locale, nav, language, isLoggedIn, isAdmin, usernam
                     onClick={() => setOpen(false)}
                     className={`rounded-lg px-3 py-3 text-base font-medium transition-all ${
                       isActive
-                        ? "bg-ink-950/5 text-ink-950 shadow-sm"
+                        ? "bg-ink-950/5 text-ink-950 shadow-navActive"
                         : "text-ink-900 hover:bg-ink-950/5"
                     }`}
                   >
