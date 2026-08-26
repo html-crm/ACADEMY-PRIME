@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
 from app.core.deps import DbSession, RequireAdmin, require_roles
-from app.models.content import Category, Video
+from app.models.content import Category, Video, Course, course_videos
 from app.models.enums import ContentStatus, UserRole, VideoFormat, Difficulty
 from app.services import audit_service, notification_service, video_service
 
@@ -209,6 +209,7 @@ class AdminVideoIn(BaseModel):
     difficulty: Difficulty = Difficulty.BEGINNER
     format: VideoFormat = VideoFormat.LONG
     tags: list[str] = Field(default_factory=list, max_length=20)
+    course_id: UUID | None = None
 
 
 @router.post("/videos", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -232,6 +233,14 @@ def admin_create_video(
     expert = db.scalars(select(Expert).where(Expert.user_id == user.id)).first() if user else None
     expert_id = expert.id if expert else None
 
+    if data.course_id is not None:
+        course = db.get(Course, data.course_id)
+        if course is None:
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND,
+                detail={"code": "course_not_found", "message": "Course not found."},
+            )
+
     video = Video(
         expert_id=expert_id,
         title=data.title.strip(),
@@ -250,6 +259,20 @@ def admin_create_video(
         published_at=datetime.now(timezone.utc),
     )
     db.add(video)
+    db.flush()
+
+    if data.course_id is not None:
+        max_pos = db.scalar(
+            select(func.coalesce(func.max(course_videos.c.position), 0)).where(
+                course_videos.c.course_id == data.course_id
+            )
+        )
+        db.execute(
+            course_videos.insert().values(
+                course_id=data.course_id, video_id=video.id, position=max_pos + 1
+            )
+        )
+
     db.commit()
     db.refresh(video)
     audit_service.log(db, "admin.video.created", actor=admin, entity_type="video", entity_id=str(video.id), request=request)

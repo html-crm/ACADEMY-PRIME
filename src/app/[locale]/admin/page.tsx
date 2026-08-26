@@ -9,6 +9,7 @@ import {
   type AdminExpertRow,
   type AdminUserRow,
   type RewardSettingsData,
+  type CoursePublic,
 } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { useSession } from "@/components/session/SessionProvider";
@@ -95,6 +96,8 @@ const COPY = {
     passwordError: "Failed to update password.",
     changePassword: "Update Password",
     passwordsNoMatch: "Passwords do not match",
+    courseSelector: "Assign to course (optional)",
+    noCourse: "No course (standalone)",
   },
   ar: {
     heading: "لوحة المشرف",
@@ -177,6 +180,8 @@ const COPY = {
     passwordError: "فشل تحديث كلمة المرور.",
     changePassword: "تحديث كلمة المرور",
     passwordsNoMatch: "كلمتا المرور غير متطابقتين",
+    courseSelector: "إضافة إلى دورة (اختياري)",
+    noCourse: "بدون دورة (مستقل)",
   },
 };
 
@@ -221,10 +226,12 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
     difficulty: "beginner",
     format: "long",
     language: "en",
+    course_id: "",
   });
   const [postState, setPostState] = useState<"idle" | "busy" | "ok">("idle");
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
   const [passwordState, setPasswordState] = useState<"idle" | "busy" | "ok" | "error">("idle");
+  const [courses, setCourses] = useState<CoursePublic[]>([]);
 
   const safeLoad = useCallback(
     async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
@@ -246,6 +253,10 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
       if (which === "experts") setExperts(await safeLoad(() => api.adminExperts(), []));
       if (which === "users") setUsers(await safeLoad(() => api.adminUsers(), []));
       if (which === "settings") setSettings(await safeLoad(() => api.adminRewardSettings(), null as unknown as RewardSettingsData));
+      if (which === "post") {
+        const c = await safeLoad(() => api.listCourses({ page_size: 100 }), { items: [], total: 0, page: 1, page_size: 100 });
+        setCourses(c.items);
+      }
     },
     [safeLoad, videoFilter],
   );
@@ -330,9 +341,10 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
         difficulty: post.difficulty,
         format: post.format,
         language: post.language,
+        course_id: post.course_id || undefined,
       });
       setPostState("ok");
-      setPost({ title: "", source_url: "", duration_minutes: "", duration_seconds: "", description: "", difficulty: "beginner", format: "long", language: "en" });
+      setPost({ title: "", source_url: "", duration_minutes: "", duration_seconds: "", description: "", difficulty: "beginner", format: "long", language: "en", course_id: "" });
     } catch (err) {
       setPostState("idle");
       setError(err instanceof ApiError ? err.message : t.loadError);
@@ -667,6 +679,17 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                   </select>
                 </label>
               </div>
+              {courses.length > 0 && (
+                <label className="mt-4 block">
+                  <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.courseSelector}</span>
+                  <select value={post.course_id} onChange={(e) => setPost({ ...post, course_id: e.target.value })} className={inputCls}>
+                    <option value="">{t.noCourse}</option>
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="mt-4 block">
                 <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fDesc}</span>
                 <textarea rows={3} value={post.description} onChange={(e) => setPost({ ...post, description: e.target.value })} className={`${inputCls} h-auto py-2`} />

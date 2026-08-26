@@ -4,9 +4,10 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, or_, select
+from sqlalchemy.orm import joinedload
 
 from app.core.deps import DbSession
-from app.models.content import Category, Video
+from app.models.content import Category, Course, Video, course_videos
 from app.models.enums import ContentStatus
 from app.models.reward import RewardSettings
 from app.schemas.common import Page
@@ -94,6 +95,7 @@ def list_videos(
     language: str | None = Query(default=None),
     format: str | None = Query(default=None),
     category_id: UUID | None = Query(default=None),
+    exclude_in_course: bool = Query(default=False),
     sort: str = Query(default="newest", pattern="^(newest|popular|reward)$"),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=12, ge=1, le=50),
@@ -114,6 +116,10 @@ def list_videos(
     if format:
         base = base.where(Video.format == format)
         count_query = count_query.where(Video.format == format)
+    if exclude_in_course:
+        course_video_ids = select(course_videos.c.video_id)
+        base = base.where(Video.id.notin_(course_video_ids))
+        count_query = count_query.where(Video.id.notin_(course_video_ids))
     total = db.scalar(count_query) or 0
     order_by = {
         "newest": Video.published_at.desc(),
@@ -135,3 +141,70 @@ def get_video(video_id: UUID, db: DbSession) -> VideoPublicOut:
             detail={"code": "video_not_found", "message": "Video not available."},
         )
     return _public_video(video, _get_reward_settings(db), include_source=True)
+
+
+class CourseOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    title: str
+    slug: str
+    description: str | None
+    thumbnail_url: str | None
+    language: str
+    difficulty: str
+    video_count: int
+    total_duration: int
+
+
+@router.get("/courses", response_model=Page[CourseOut])
+def list_courses(
+    db: DbSession,
+    q: str | None = Query(default=None, max_length=100),
+    difficulty: str | None = Query(default=None),
+    sort: str = Query(default="newest", pattern="^(newest|popular|reward)$"),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=12, ge=1, le=50),
+) -> Page[CourseOut]:
+    base = (
+        select(
+            Course,
+            func.count(Video.id).label("video_count"),
+            func.coalesce(func.sum(Video.duration_seconds), 0).label("total_duration"),
+        )
+        .join(course_videos, Course.id == course_videos.c.course_id, isouter=True)
+        .join(Video, Video.id == course_videos.c.video_id, isouter=True)
+        .where(Course.status == ContentStatus.PUBLISHED)
+        .group_by(Course.id)
+    )
+    count_query = select(func.count()).select_from(Course).where(Course.status == ContentStatus.PUBLISHED)
+    if q:
+        pattern = f"%{q}%"
+        condition = or_(Course.title.ilike(pattern), Course.description.ilike(pattern))
+        base = base.where(condition)
+        count_query = count_query.where(condition)
+    if difficulty:
+        base = base.where(Course.difficulty == difficulty)
+        count_query = count_query.where(Course.difficulty == difficulty)
+    total = db.scalar(count_query) or 0
+    order_by = {
+        "newest": Course.published_at.desc(),
+        "popular": func.count(Video.id).desc(),
+        "reward": Course.reward_bonus_amount.desc().nullslast(),
+    }[sort]
+    rows = db.scalars(base.order_by(order_by).offset((page - 1) * page_size).limit(page_size)).all()
+    items = [
+        CourseOut(
+            id=r[0].id,
+            title=r[0].title,
+            slug=r[0].slug,
+            description=r[0].description,
+            thumbnail_url=r[0].thumbnail_url,
+            language=r[0].language,
+            difficulty=r[0].difficulty.value,
+            video_count=r[1],
+            total_duration=r[2],
+        )
+        for r in rows
+    ]
+    return Page(items=items, total=total, page=page, page_size=page_size)

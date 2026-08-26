@@ -132,6 +132,18 @@ export type VideoPublic = {
   required_watch_percentage: string;
 };
 
+export type CoursePublic = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  thumbnail_url: string | null;
+  language: string;
+  difficulty: string;
+  video_count: number;
+  total_duration: number;
+};
+
 export type PageOf<T> = {
   items: T[];
   total: number;
@@ -288,9 +300,17 @@ export const api = {
     sort?: string;
     page?: number;
     page_size?: number;
-  }) => request<PageOf<VideoPublic>>(`/content/videos?${qs(params)}`),
+    exclude_in_course?: boolean;
+  }) => request<PageOf<VideoPublic>>(`/content/videos?${qs({ ...params, exclude_in_course: params.exclude_in_course ? "true" : undefined })}`),
   getVideo: (id: string) => request<VideoPublic>(`/content/videos/${id}`),
   listCategories: () => request<{ id: string; name: string; slug: string }[]>("/content/categories"),
+  listCourses: (params: {
+    q?: string;
+    difficulty?: string;
+    sort?: string;
+    page?: number;
+    page_size?: number;
+  } = {}) => request<PageOf<CoursePublic>>(`/content/courses?${qs(params)}`),
 
   heartbeat: (data: {
     video_id: string;
@@ -325,6 +345,7 @@ export const api = {
     format: string;
     language?: string;
     tags?: string[];
+    course_id?: string;
   }) => request<SubmittedVideo>("/experts/videos", { method: "POST", body: JSON.stringify(data) }),
   mySubmittedVideos: () => request<SubmittedVideo[]>("/experts/me/videos"),
   updateSubmittedVideo: (
@@ -385,4 +406,19 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ current_password, new_password }),
     }),
+
+  adminCreateVideo: (data: {
+    title: string;
+    description?: string;
+    source_url: string;
+    duration_seconds: number;
+    difficulty: string;
+    format: string;
+    language?: string;
+    tags?: string[];
+    course_id?: string;
+  }) => request<{ id: string; title: string; status: string }>("/admin/videos", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
 };

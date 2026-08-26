@@ -1,12 +1,13 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
 from app.core.deps import CurrentUser, DbSession
-from app.models.content import Video
+from app.models.content import Video, Course, course_videos
 from app.models.enums import (
     ContentStatus,
     Difficulty,
@@ -36,6 +37,7 @@ class VideoSubmitIn(BaseModel):
     format: VideoFormat = VideoFormat.LONG
     tags: list[str] = Field(default_factory=list, max_length=20)
     learning_objectives: list[str] = Field(default_factory=list, max_length=20)
+    course_id: UUID | None = None
     as_draft: bool = False
 
 
@@ -119,7 +121,7 @@ def _validate_duration(format_: VideoFormat, duration_seconds: int) -> None:
 
 @router.post("/videos", response_model=VideoSubmitOut, status_code=status.HTTP_201_CREATED)
 def submit_video(data: VideoSubmitIn, request: Request, user: CurrentUser, db: DbSession) -> VideoSubmitOut:
-    _require_approved_expert(user, db)
+    expert = _require_approved_expert(user, db)
     _validate_duration(data.format, data.duration_seconds)
     try:
         provider, provider_video_id = video_service.detect_provider(data.source_url)
@@ -131,8 +133,17 @@ def submit_video(data: VideoSubmitIn, request: Request, user: CurrentUser, db: D
                 "message": "Use a supported YouTube, Instagram or Vimeo URL.",
             },
         )
+
+    if data.course_id is not None:
+        course = db.get(Course, data.course_id)
+        if course is None or course.status != ContentStatus.PUBLISHED:
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND,
+                detail={"code": "course_not_found", "message": "Course not found."},
+            )
+
     video = Video(
-        expert_id=user.expert.id if user.expert else None,
+        expert_id=expert.id,
         title=data.title.strip(),
         slug=video_service.slugify(data.title),
         description=data.description,
@@ -149,6 +160,20 @@ def submit_video(data: VideoSubmitIn, request: Request, user: CurrentUser, db: D
         status=ContentStatus.DRAFT if data.as_draft else ContentStatus.SUBMITTED,
     )
     db.add(video)
+    db.flush()
+
+    if data.course_id is not None:
+        max_pos = db.scalar(
+            select(func.coalesce(func.max(course_videos.c.position), 0)).where(
+                course_videos.c.course_id == data.course_id
+            )
+        )
+        db.execute(
+            course_videos.insert().values(
+                course_id=data.course_id, video_id=video.id, position=max_pos + 1
+            )
+        )
+
     db.commit()
     db.refresh(video)
     audit_service.log(
