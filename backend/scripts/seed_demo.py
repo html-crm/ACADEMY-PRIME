@@ -29,8 +29,8 @@ DEMO_VIDEOS = [
     },
 ]
 
-ADMIN_EMAIL = "admin@academicprime.dev"
-ADMIN_PASSWORD = "Admin1234!"
+ADMIN_EMAIL = "danialoo.crypto@gmail.com"
+ADMIN_PASSWORD = "Expert1234!"
 EXPERT_EMAIL = "expert@academicprime.dev"
 EXPERT_PASSWORD = "Expert1234!"
 
