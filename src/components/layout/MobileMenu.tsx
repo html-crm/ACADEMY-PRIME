@@ -2,27 +2,44 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { Dictionary } from "@/lib/i18n";
 import { Locale } from "@/types/user";
+import { locales } from "@/lib/i18n";
 import { Button } from "@/components/ui/Button";
 
 interface MobileMenuProps {
   locale: Locale;
   nav: Dictionary["common"]["nav"];
+  language: Dictionary["common"]["language"];
+  isLoggedIn: boolean;
+  isAdmin: boolean;
+  username?: string;
+  onLogout: () => void;
 }
 
-export function MobileMenu({ locale, nav }: MobileMenuProps) {
+export function MobileMenu({ locale, nav, language, isLoggedIn, isAdmin, username, onLogout }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
   const links: Array<[string, string]> = [
     [nav.home, `/${locale}`],
     [nav.learn, `/${locale}/learn`],
     [nav.courses, `/${locale}/courses`],
-    [nav.shortVideos, `/${locale}/short-videos`],
+    [nav.longVideos, `/${locale}/videos`],
+    [nav.shortVideos, `/${locale}/shorts`],
     [nav.experts, `/${locale}/experts`],
     [nav.rewards, `/${locale}/rewards`],
     [nav.about, `/${locale}/about`],
   ];
+
+  function switchLocale(nextLocale: Locale) {
+    if (!pathname) return;
+    const segments = pathname.split("/");
+    segments[1] = nextLocale;
+    router.push(segments.join("/") || `/${nextLocale}`);
+  }
 
   return (
     <div className="md:hidden">
@@ -61,25 +78,81 @@ export function MobileMenu({ locale, nav }: MobileMenuProps) {
             </div>
 
             <nav className="flex flex-col gap-1">
-              {links.map(([label, href]) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setOpen(false)}
-                  className="rounded-lg px-3 py-3 text-base font-medium text-ink-900 hover:bg-ink-950/5"
-                >
-                  {label}
-                </Link>
-              ))}
+              {links.map(([label, href]) => {
+                const isActive = pathname === href || (href !== `/${locale}` && pathname.startsWith(href));
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setOpen(false)}
+                    className={`rounded-lg px-3 py-3 text-base font-medium transition-all ${
+                      isActive
+                        ? "bg-ink-950/5 text-ink-950 shadow-sm"
+                        : "text-ink-900 hover:bg-ink-950/5"
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
             </nav>
 
-            <div className="mt-auto flex flex-col gap-3 pt-8">
-              <Button variant="secondary" href={`/${locale}/login`}>
-                {nav.login}
-              </Button>
-              <Button variant="primary" href={`/${locale}/wallet`}>
-                {nav.connectWallet}
-              </Button>
+            <div className="mt-auto flex flex-col gap-3 pt-6">
+              <div className="flex items-center gap-2 rounded-lg border border-ink-950/10 px-3 py-2">
+                <span className="text-xs text-ink-500">{language.label}:</span>
+                {locales.map((loc) => (
+                  <button
+                    key={loc.code}
+                    type="button"
+                    onClick={() => switchLocale(loc.code)}
+                    className={`rounded-md px-2.5 py-1 text-sm font-medium transition-colors ${
+                      loc.code === locale
+                        ? "bg-ink-950 text-paper-50"
+                        : "text-ink-600 hover:bg-ink-950/5"
+                    }`}
+                  >
+                    {loc.nativeLabel}
+                  </button>
+                ))}
+              </div>
+
+              <a
+                href="https://dexscreener.com/solana/fcpxrzsme4gaopjjurpyzkgjrtfgecxypua88178yxwx"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-center rounded-full bg-brass-400 px-4 py-2.5 text-sm font-bold tracking-wide text-ink-950 shadow-card"
+              >
+                BUY NOW
+              </a>
+
+              {isLoggedIn ? (
+                <>
+                  {isAdmin && (
+                    <Button variant="secondary" href={`/${locale}/admin`} onClick={() => setOpen(false)}>
+                      Admin
+                    </Button>
+                  )}
+                  <Button variant="secondary" href={`/${locale}/dashboard`} onClick={() => setOpen(false)}>
+                    {username}
+                  </Button>
+                  <button
+                    onClick={() => { onLogout(); setOpen(false); }}
+                    className="rounded-lg border border-ink-950/10 px-3 py-2.5 text-sm font-medium text-ink-500 transition-colors hover:text-ink-950"
+                  >
+                    {nav.login === "Log In" ? "Log out" : "تسجيل الخروج"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Button variant="secondary" href={`/${locale}/login`} onClick={() => setOpen(false)}>
+                    {nav.login}
+                  </Button>
+                  <Button variant="primary" href={`/${locale}/register`} onClick={() => setOpen(false)}>
+                    Join Free
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

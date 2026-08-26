@@ -31,7 +31,7 @@ export function CourseCard({ course, copy }: CourseCardProps) {
             {course.lessonCount} {copy.lessons}
           </span>
           <span className="flex items-center gap-1 font-semibold text-emerald-700">
-            +{course.totalRewardTokens} APT
+            +{course.totalRewardTokens} ACAD-P
           </span>
         </div>
         <p className="text-xs text-ink-300">

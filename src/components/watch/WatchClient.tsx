@@ -159,7 +159,7 @@ export function WatchClient({ video, locale }: { video: CatalogVideo; locale: st
   }, [video?.id, authed]);
 
   const pct = Number(result?.current_percentage ?? 0);
-  const required = video.requiredWatchPercentage || 90;
+  const required = video.requiredWatchPercentage || 85;
   const completed = earned || Boolean(result?.completed);
 
   return (
@@ -196,7 +196,7 @@ export function WatchClient({ video, locale }: { video: CatalogVideo; locale: st
             </span>
           )}
           <span className="rounded-full border border-emerald-600/30 bg-emerald-500/10 px-3 py-1 font-semibold text-emerald-700">
-            ⬡ {video.reward} APT
+            ⬡ {video.reward} ACAD-P
           </span>
         </div>
 
@@ -205,7 +205,7 @@ export function WatchClient({ video, locale }: { video: CatalogVideo; locale: st
           {completed ? (
             <div className="rounded-lg border border-emerald-600/30 bg-emerald-500/10 p-4 text-center">
               <p className="font-display text-lg tracking-wide text-emerald-700">✓ {copy.completed}</p>
-              <p className="mt-1 text-sm font-semibold text-emerald-700">⬡ {copy.rewardEligible} · {video.reward} APT</p>
+              <p className="mt-1 text-sm font-semibold text-emerald-700">⬡ {copy.rewardEligible} · {video.reward} ACAD-P</p>
               <Link
                 href={`/${locale}/dashboard`}
                 className="mt-3 inline-flex rounded-full bg-ink-950 px-5 py-2 text-xs font-semibold text-paper-50"

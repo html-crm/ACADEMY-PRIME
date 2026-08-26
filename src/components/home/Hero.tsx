@@ -74,7 +74,7 @@ export function Hero({ copy }: HeroProps) {
                         : "text-[13px] font-semibold text-emerald-700"
                     }
                   >
-                    +{row.reward} APT
+                    +{row.reward} ACAD-P
                   </span>
                 </li>
               ))}
@@ -88,6 +88,17 @@ export function Hero({ copy }: HeroProps) {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="flex justify-center pb-12">
+        <a
+          href="https://dexscreener.com/solana/fcpxrzsme4gaopjjurpyzkgjrtfgecxypua88178yxwx"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center rounded-full bg-brass-400 px-8 py-3 text-sm font-bold tracking-wide text-ink-950 shadow-card transition-colors hover:bg-brass-300"
+        >
+          BUY NOW
+        </a>
       </div>
     </section>
   );

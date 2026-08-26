@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const DEFAULT_LOCALE = "en";
+const DEFAULT_LOCALE = "ar";
 const LOCALES = ["en", "ar"];
 const PUBLIC_FILE = /\.(.*)$/;
 
