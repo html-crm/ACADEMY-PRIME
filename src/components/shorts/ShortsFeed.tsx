@@ -137,7 +137,7 @@ export function ShortsFeed({ copy, locale }: ShortsFeedProps) {
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-5 pb-7 text-start">
                   <p className="font-display text-lg leading-snug text-white">{video.title}</p>
                   <div className="mt-2 flex items-center gap-3 text-xs text-white/70">
-                    <span>{video.durationSeconds}s</span>
+                    <span>{`${Math.floor(video.durationSeconds / 60)}:${String(video.durationSeconds % 60).padStart(2, "0")}`}</span>
                     <span>·</span>
                     <span className="font-semibold text-brass-300">+{video.reward} ACAD-P</span>
                   </div>

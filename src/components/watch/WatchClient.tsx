@@ -208,7 +208,7 @@ export function WatchClient({ video, locale }: { video: CatalogVideo; locale: st
           <span className="rounded-full border border-line px-3 py-1 capitalize">{video.difficulty}</span>
           {video.durationSeconds > 0 && (
             <span className="rounded-full border border-line px-3 py-1">
-              {Math.round(video.durationSeconds / 60)} min
+              {`${Math.floor(video.durationSeconds / 60)}:${String(video.durationSeconds % 60).padStart(2, "0")}`}
             </span>
           )}
           <span className="rounded-full border border-emerald-600/30 bg-emerald-500/10 px-3 py-1 font-semibold text-emerald-700">
