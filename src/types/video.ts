@@ -1,10 +1,13 @@
 export type VideoProviderKind =
   | "youtube"
   | "instagram"
+  | "vimeo"
+  | "tiktok"
+  | "dailymotion"
   | "external"
   | "unsupported";
 
-export type VideoFormat = "long" | "short";
+export type VideoFormat = "long" | "short" | "course";
 export type DifficultyLevel = "beginner" | "intermediate" | "advanced";
 
 /** Frontend catalog model mapped from the FastAPI `VideoPublic` payload. */

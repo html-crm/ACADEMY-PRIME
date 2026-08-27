@@ -10,7 +10,7 @@ type Earnings = Awaited<ReturnType<typeof api.myExpertEarnings>>;
 const COPY = {
   en: {
     heading: "Expert Studio",
-    subhead: "Post lessons and shorts. Approved posts go live after admin review.",
+    subhead: "Post lessons, shorts and courses. Approved posts go live after admin review.",
     applyTitle: "Become an expert",
     displayName: "Display name",
     headline: "Headline",
@@ -25,8 +25,9 @@ const COPY = {
     type: "Type",
     long: "Lesson (long)",
     short: "Short (≤60s)",
+    course: "Course",
     title: "Title",
-    url: "Video URL (YouTube / Instagram link)",
+    url: "Video URL (YouTube, Instagram, Vimeo, TikTok, or other)",
     description: "Description",
     duration: "Duration in seconds",
     difficulty: "Difficulty",
@@ -58,7 +59,7 @@ const COPY = {
   },
   ar: {
     heading: "استوديو الخبير",
-    subhead: "انشر الدروس والمقاطع القصيرة. تُنشر الموافقة بعد مراجعة المشرف.",
+    subhead: "انشر الدروس والمقاطع والدورات. تُنشر الموافقة بعد مراجعة المشرف.",
     applyTitle: "كن خبيراً",
     displayName: "الاسم الظاهر",
     headline: "العنوان الوصفي",
@@ -73,8 +74,9 @@ const COPY = {
     type: "النوع",
     long: "درس (طويل)",
     short: "قصير (≤٦٠ث)",
+    course: "دورة",
     title: "العنوان",
-    url: "رابط الفيديو (يوتيوب / إنستغرام)",
+    url: "رابط الفيديو (يوتيوب، إنستغرام، فيميو، تيك توك، أو مصدر آخر)",
     description: "الوصف",
     duration: "المدة بالثواني",
     difficulty: "المستوى",
@@ -124,7 +126,7 @@ interface FormState {
   description: string;
   duration_seconds: string;
   difficulty: string;
-  format: "long" | "short";
+  format: "long" | "short" | "course";
   language: string;
   course_id: string;
 }
@@ -228,7 +230,7 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
       description: video.description ?? "",
       duration_seconds: String(video.duration_seconds ?? ""),
       difficulty: video.difficulty,
-      format: video.format === "short" ? "short" : "long",
+      format: video.format === "short" ? "short" : video.format === "course" ? "course" : "long",
       language: video.language || "en",
       course_id: "",
     });
@@ -346,6 +348,7 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
                 <select aria-label={t.type} value={form.format} onChange={(e) => setForm({ ...form, format: e.target.value as FormState["format"] })} className={`${inputCls} px-3`}>
                   <option value="long">{t.long}</option>
                   <option value="short">{t.short}</option>
+                  <option value="course">{t.course}</option>
                 </select>
                 <input required minLength={5} maxLength={200} placeholder={t.title} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
               </div>
@@ -407,7 +410,7 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate text-sm font-semibold text-ink-950">{video.title}</h3>
                     <p className="mt-0.5 text-xs text-ink-300">
-                      {video.format === "short" ? t.short : t.long} · {video.duration_seconds ?? "?"}s
+                      {video.format === "short" ? t.short : video.format === "course" ? t.course : t.long} · {video.duration_seconds ?? "?"}s
                     </p>
                   </div>
                   <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold capitalize ${STATUS_TONE[video.status] ?? "bg-paper-100 text-ink-500"}`}>

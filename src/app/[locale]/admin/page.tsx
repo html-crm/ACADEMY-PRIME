@@ -70,7 +70,7 @@ const COPY = {
     postHeading: "Create a post",
     postSub: "Publish lessons or shorts directly as admin.",
     fTitle: "Title",
-    fUrl: "Video URL (YouTube / Instagram)",
+    fUrl: "Video URL (YouTube, Instagram, Vimeo, TikTok, or other)",
     fDurationMin: "Minutes",
     fDurationSec: "Seconds",
     fDesc: "Description (optional)",
@@ -81,6 +81,7 @@ const COPY = {
     fFormat: "Type",
     longF: "Lesson",
     shortF: "Short (≤60s)",
+    courseF: "Course",
     fLang: "Language",
     langEn: "English",
     langAr: "العربية",
@@ -154,7 +155,7 @@ const COPY = {
     postHeading: "إنشاء منشور",
     postSub: "انشر الدروس أو المقاطع مباشرة كمشرف.",
     fTitle: "العنوان",
-    fUrl: "رابط الفيديو (يوتيوب / إنستغرام)",
+    fUrl: "رابط الفيديو (يوتيوب، إنستغرام، فيميو، تيك توك، أو مصدر آخر)",
     fDurationMin: "الدقائق",
     fDurationSec: "الثواني",
     fDesc: "الوصف (اختياري)",
@@ -165,6 +166,7 @@ const COPY = {
     fFormat: "النوع",
     longF: "درس",
     shortF: "قصير (≤٦٠ث)",
+    courseF: "دورة",
     fLang: "اللغة",
     langEn: "English",
     langAr: "العربية",
@@ -660,6 +662,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                 <select value={post.format} onChange={(e) => setPost({ ...post, format: e.target.value })} className={inputCls}>
                   <option value="long">{t.longF}</option>
                   <option value="short">{t.shortF}</option>
+                  <option value="course">{t.courseF}</option>
                 </select>
               </label>
               <div className="mt-4 grid grid-cols-2 gap-4">

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, getAccessToken, type HeartbeatResult } from "@/lib/api";
 import type { CatalogVideo } from "@/types/video";
-import { youTubeEmbedUrl } from "@/lib/videoProviders";
+import { youTubeEmbedUrl, vimeoEmbedUrl, dailymotionEmbedUrl } from "@/lib/videoProviders";
 
 type YTPlayer = {
   getCurrentTime: () => number;
@@ -167,6 +167,22 @@ export function WatchClient({ video, locale }: { video: CatalogVideo; locale: st
       <div className="relative aspect-video w-full overflow-hidden rounded-xl2 bg-ink-950 shadow-elevated">
         {video.provider === "youtube" && video.providerVideoId ? (
           <div id="ap-yt-player" className="absolute inset-0 h-full w-full" />
+        ) : video.provider === "vimeo" && video.providerVideoId ? (
+          <iframe
+            src={vimeoEmbedUrl(video.providerVideoId)}
+            title={video.title}
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+            className="absolute inset-0 h-full w-full"
+          />
+        ) : video.provider === "dailymotion" && video.providerVideoId ? (
+          <iframe
+            src={dailymotionEmbedUrl(video.providerVideoId)}
+            title={video.title}
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+            className="absolute inset-0 h-full w-full"
+          />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-8 text-center">
             <p className="max-w-sm text-sm leading-relaxed text-paper-100/70">{copy.cannotEmbed}</p>
