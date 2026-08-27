@@ -180,6 +180,7 @@ export type AdminVideoRow = {
   format: string;
   status: string;
   expert_id: string | null;
+  reward_amount: string | null;
   created_at: string;
 };
 
@@ -381,6 +382,11 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ action, note }),
     }),
+  adminSetVideoReward: (id: string, reward_amount: string | null) =>
+    request<{ id: string; reward_amount: string | null }>(`/admin/videos/${id}/reward`, {
+      method: "PATCH",
+      body: JSON.stringify({ reward_amount }),
+    }),
   adminUsers: () => request<AdminUserRow[]>("/admin/users?page_size=100"),
   adminSetUserStatus: (id: string, status: string) =>
     request<AdminUserRow>(`/admin/users/${id}/status`, {
@@ -417,6 +423,7 @@ export const api = {
     language?: string;
     tags?: string[];
     course_id?: string;
+    reward_amount?: string;
   }) => request<{ id: string; title: string; status: string }>("/admin/videos", {
     method: "POST",
     body: JSON.stringify(data),

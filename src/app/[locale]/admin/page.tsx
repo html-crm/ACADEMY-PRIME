@@ -44,6 +44,7 @@ const COPY = {
     colFormat: "Format",
     colLang: "Lang",
     colStatus: "Status",
+    colReward: "Reward",
     colActions: "Actions",
     approve: "Approve",
     reject: "Reject",
@@ -85,6 +86,9 @@ const COPY = {
     fLang: "Language",
     langEn: "English",
     langAr: "العربية",
+    fReward: "Token reward per completion",
+    fRewardEmpty: "Leave empty to use the default",
+    rewardUpdated: "Reward saved",
     submitPost: "Submit for review",
     posting: "Submitting…",
     postOk: "Created! Approve and publish it from the Videos tab.",
@@ -129,6 +133,7 @@ const COPY = {
     colFormat: "النوع",
     colLang: "اللغة",
     colStatus: "الحالة",
+    colReward: "المكافأة",
     colActions: "إجراءات",
     approve: "قبول",
     reject: "رفض",
@@ -170,6 +175,9 @@ const COPY = {
     fLang: "اللغة",
     langEn: "English",
     langAr: "العربية",
+    fReward: "مكافأة الرمز لكل إتمام",
+    fRewardEmpty: "اتركه فارغًا لاستخدام الافتراضي",
+    rewardUpdated: "تم حفظ المكافأة",
     submitPost: "إرسال للمراجعة",
     posting: "جارٍ الإرسال…",
     postOk: "تم الإنشاء! قبوله وانشره من تبويب الفيديوهات.",
@@ -204,6 +212,42 @@ type Tab = (typeof TABS)[number];
 const inputCls =
   "h-11 w-full rounded-lg border border-line bg-paper-50 px-4 text-sm outline-none focus:border-brass-400";
 
+function RewardInput({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <input
+        type="number"
+        min={0}
+        step="any"
+        value={draft}
+        placeholder="—"
+        onChange={(e) => {
+          setDraft(e.target.value);
+          setSaved(false);
+        }}
+        className="h-8 w-24 rounded-lg border border-line bg-paper-50 px-2 text-sm outline-none focus:border-brass-400"
+      />
+      <button
+        onClick={() => {
+          onSave(draft);
+          setSaved(true);
+        }}
+        className="rounded-md bg-ink-950 px-2 py-1 text-xs font-semibold text-paper-50 hover:bg-ink-800"
+      >
+        Set
+      </button>
+      {saved && <span className="text-xs text-emerald-700">✓</span>}
+    </div>
+  );
+}
+
 export default function AdminPage({ params }: { params: { locale: string } }) {
   const locale = params.locale === "ar" ? "ar" : "en";
   const t = COPY[locale];
@@ -219,6 +263,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [settings, setSettings] = useState<RewardSettingsData | null>(null);
   const [savedMsg, setSavedMsg] = useState("");
+  const [rewardMsg, setRewardMsg] = useState("");
   const [post, setPost] = useState({
     title: "",
     source_url: "",
@@ -229,6 +274,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
     format: "long",
     language: "en",
     course_id: "",
+    reward: "",
   });
   const [postState, setPostState] = useState<"idle" | "busy" | "ok">("idle");
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
@@ -250,6 +296,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
   const loadTab = useCallback(
     async (which: Tab) => {
       setError("");
+      setRewardMsg("");
       if (which === "overview") setStats(await safeLoad(() => api.adminStats(), null as unknown as AdminStats));
       if (which === "videos") setVideos(await safeLoad(() => api.adminVideos(videoFilter), []));
       if (which === "experts") setExperts(await safeLoad(() => api.adminExperts(), []));
@@ -285,6 +332,18 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
       await api.adminReviewVideo(id, action);
       await loadTab("videos");
       if (stats) setStats(await safeLoad(() => api.adminStats(), stats));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t.loadError);
+    }
+  }
+
+  async function saveVideoReward(id: string, reward: string) {
+    setRewardMsg("");
+    const value = reward.trim() === "" ? null : reward.trim();
+    try {
+      await api.adminSetVideoReward(id, value);
+      setVideos((prev) => prev.map((v) => (v.id === id ? { ...v, reward_amount: value } : v)));
+      setRewardMsg(t.rewardUpdated);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t.loadError);
     }
@@ -344,9 +403,10 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
         format: post.format,
         language: post.language,
         course_id: post.course_id || undefined,
+        reward_amount: post.reward.trim() || undefined,
       });
       setPostState("ok");
-      setPost({ title: "", source_url: "", duration_minutes: "", duration_seconds: "", description: "", difficulty: "beginner", format: "long", language: "en", course_id: "" });
+      setPost({ title: "", source_url: "", duration_minutes: "", duration_seconds: "", description: "", difficulty: "beginner", format: "long", language: "en", course_id: "", reward: "" });
     } catch (err) {
       setPostState("idle");
       setError(err instanceof ApiError ? err.message : t.loadError);
@@ -450,6 +510,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                 </button>
               ))}
             </div>
+            {rewardMsg && <p className="mt-3 text-sm font-medium text-emerald-700">{rewardMsg}</p>}
             {videos.length === 0 ? (
               <p className="mt-4 text-sm text-ink-500">{t.emptyList}</p>
             ) : (
@@ -461,6 +522,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                       <th className="px-4 py-3 text-start">{t.colFormat}</th>
                       <th className="px-4 py-3 text-start">{t.colLang}</th>
                       <th className="px-4 py-3 text-start">{t.colStatus}</th>
+                      <th className="px-4 py-3 text-start">{t.colReward}</th>
                       <th className="px-4 py-3 text-start">{t.colActions}</th>
                     </tr>
                   </thead>
@@ -474,6 +536,9 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TONE[v.status] ?? "bg-paper-100 text-ink-500"}`}>
                             {v.status}
                           </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <RewardInput value={v.reward_amount ?? ""} onSave={(val) => void saveVideoReward(v.id, val)} />
                         </td>
                         <td className="px-4 py-3">
                           {(v.status === "submitted" || v.status === "under_review" || v.status === "rejected" || v.status === "draft") && (
@@ -664,6 +729,18 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                   <option value="short">{t.shortF}</option>
                   <option value="course">{t.courseF}</option>
                 </select>
+              </label>
+              <label className="mt-4 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fReward}</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="any"
+                  value={post.reward}
+                  placeholder={t.fRewardEmpty}
+                  onChange={(e) => setPost({ ...post, reward: e.target.value })}
+                  className={inputCls}
+                />
               </label>
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <label className="block">
