@@ -107,19 +107,31 @@ def test_invalid_transition_rejected(client, db):
     assert publish_directly.status_code == 409
 
 
-def test_unsupported_url_rejected(client, db):
+def test_external_url_accepted_and_non_http_rejected(client, db):
     creator = make_user(db)
     headers, _ = _approve_expert(client, db, creator)
-    response = client.post(
+    external = client.post(
         "/api/v1/experts/videos",
         json={
-            "title": "Some random link",
+            "title": "Hosted video",
             "source_url": "https://example.com/video.mp4",
             "duration_seconds": 60,
         },
         headers=headers,
     )
-    assert response.status_code == 422
+    assert external.status_code == 201
+    assert external.json()["provider"] == "external"
+
+    garbage = client.post(
+        "/api/v1/experts/videos",
+        json={
+            "title": "Bad source",
+            "source_url": "file:///etc/passwd",
+            "duration_seconds": 60,
+        },
+        headers=headers,
+    )
+    assert garbage.status_code == 422
 
 
 def test_category_crud(client, db):

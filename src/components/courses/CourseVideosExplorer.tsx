@@ -15,7 +15,7 @@ const fmtDuration = (s: number) => {
   if (!s || s <= 0) return "—";
   const m = Math.floor(s / 60);
   const sec = s % 60;
-  return `${String(m)}:${String(sec).padStart(2, "0")}`;
+  return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 };
 
 export function CourseVideosExplorer({ copy, locale }: CourseVideosExplorerProps) {

@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
@@ -59,6 +60,7 @@ def list_videos_admin(
             "language": v.language,
             "difficulty": v.difficulty.value,
             "format": v.format.value,
+            "documentary": v.documentary,
             "status": v.status.value,
             "expert_id": str(v.expert_id) if v.expert_id else None,
             "reward_amount": str(v.reward_amount) if v.reward_amount else None,
@@ -208,8 +210,10 @@ class AdminVideoIn(BaseModel):
     language: str = Field(default="en", pattern=r"^[a-z]{2}(-[A-Za-z]{2})?$")
     difficulty: Difficulty = Difficulty.BEGINNER
     format: VideoFormat = VideoFormat.LONG
+    documentary: bool = False
     tags: list[str] = Field(default_factory=list, max_length=20)
     course_id: UUID | None = None
+    reward_amount: Decimal | None = Field(default=None, ge=0, le=Decimal("1000000"))
 
 
 @router.post("/videos", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -254,9 +258,11 @@ def admin_create_video(
         language=data.language,
         difficulty=data.difficulty,
         format=data.format,
+        documentary=data.documentary,
         tags=data.tags,
         status=ContentStatus.PUBLISHED,
         published_at=datetime.now(timezone.utc),
+        reward_amount=data.reward_amount,
     )
     db.add(video)
     db.flush()
@@ -277,3 +283,35 @@ def admin_create_video(
     db.refresh(video)
     audit_service.log(db, "admin.video.created", actor=admin, entity_type="video", entity_id=str(video.id), request=request)
     return {"id": str(video.id), "title": video.title, "status": video.status.value}
+
+
+class VideoRewardIn(BaseModel):
+    reward_amount: Decimal | None = Field(default=None, ge=0, le=Decimal("1000000"))
+
+
+@router.patch("/videos/{video_id}/reward", response_model=dict)
+def set_video_reward(
+    video_id: UUID,
+    data: VideoRewardIn,
+    request: Request,
+    admin: RequireAdmin,
+    db: DbSession,
+) -> dict:
+    video = db.get(Video, video_id)
+    if video is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            detail={"code": "video_not_found", "message": "Video not found."},
+        )
+    video.reward_amount = data.reward_amount
+    db.commit()
+    audit_service.log(
+        db,
+        "admin.video.reward_updated",
+        actor=admin,
+        entity_type="video",
+        entity_id=str(video_id),
+        data={"reward_amount": str(data.reward_amount) if data.reward_amount is not None else None},
+        request=request,
+    )
+    return {"id": str(video.id), "reward_amount": str(video.reward_amount) if video.reward_amount is not None else None}

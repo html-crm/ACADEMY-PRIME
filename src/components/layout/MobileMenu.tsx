@@ -27,9 +27,8 @@ export function MobileMenu({ locale, nav, language, isLoggedIn, isAdmin, usernam
     [nav.home, `/${locale}`],
     [nav.learn, `/${locale}/learn`],
     [nav.courses, `/${locale}/courses`],
-    [nav.longVideos, `/${locale}/videos`],
-    [nav.shortVideos, `/${locale}/shorts`],
-    [nav.experts, `/${locale}/experts`],
+    [nav.videoLibrary, `/${locale}/library`],
+    [nav.partners, `/${locale}/partners`],
     [nav.rewards, `/${locale}/rewards`],
     [nav.about, `/${locale}/about`],
   ];

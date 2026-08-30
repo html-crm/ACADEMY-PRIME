@@ -10,6 +10,7 @@ import {
   type AdminUserRow,
   type RewardSettingsData,
   type CoursePublic,
+  type Partner,
 } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { useSession } from "@/components/session/SessionProvider";
@@ -21,6 +22,7 @@ const COPY = {
     tabOverview: "Overview",
     tabVideos: "Videos",
     tabExperts: "Experts",
+    tabPartners: "Partners",
     tabUsers: "Users",
     tabSettings: "Reward settings",
     tabPost: "Post",
@@ -83,6 +85,7 @@ const COPY = {
     longF: "Lesson",
     shortF: "Short (≤60s)",
     courseF: "Course",
+    fDocumentary: "Documentary",
     fLang: "Language",
     langEn: "English",
     langAr: "العربية",
@@ -103,6 +106,19 @@ const COPY = {
     passwordsNoMatch: "Passwords do not match",
     courseSelector: "Assign to course (optional)",
     noCourse: "No course (standalone)",
+    partnerName: "Partner name",
+    partnerLogo: "Logo URL",
+    partnerWebsite: "Website URL",
+    partnerDesc: "Description (optional)",
+    partnerActive: "Active",
+    partnerAdd: "Add partner",
+    partnerUpdate: "Update partner",
+    partnerDelete: "Delete",
+    partnerSaved: "Partner saved!",
+    partnerCreated: "Partner created!",
+    partnerNew: "Add a partner",
+    add: "Add",
+    cancel: "Cancel",
   },
   ar: {
     heading: "لوحة المشرف",
@@ -110,6 +126,7 @@ const COPY = {
     tabOverview: "نظرة عامة",
     tabVideos: "الفيديوهات",
     tabExperts: "الخبراء",
+    tabPartners: "الشركاء",
     tabUsers: "المستخدمون",
     tabSettings: "إعدادات المكافآت",
     tabPost: "منشور",
@@ -172,6 +189,7 @@ const COPY = {
     longF: "درس",
     shortF: "قصير (≤٦٠ث)",
     courseF: "دورة",
+    fDocumentary: "وثائقي",
     fLang: "اللغة",
     langEn: "English",
     langAr: "العربية",
@@ -192,6 +210,19 @@ const COPY = {
     passwordsNoMatch: "كلمتا المرور غير متطابقتين",
     courseSelector: "إضافة إلى دورة (اختياري)",
     noCourse: "بدون دورة (مستقل)",
+    partnerName: "اسم الشريك",
+    partnerLogo: "رابط الشعار",
+    partnerWebsite: "رابط الموقع",
+    partnerDesc: "الوصف (اختياري)",
+    partnerActive: "نشط",
+    partnerAdd: "إضافة شريك",
+    partnerUpdate: "تحديث الشريك",
+    partnerDelete: "حذف",
+    partnerSaved: "تم حفظ الشريك!",
+    partnerCreated: "تم إنشاء الشريك!",
+    partnerNew: "إضافة شريك",
+    add: "إضافة",
+    cancel: "إلغاء",
   },
 };
 
@@ -206,7 +237,7 @@ const TONE: Record<string, string> = {
   suspended: "bg-red-50 text-red-600",
 };
 
-const TABS = ["overview", "post", "videos", "experts", "users", "settings", "password"] as const;
+const TABS = ["overview", "post", "videos", "experts", "partners", "users", "settings", "password"] as const;
 type Tab = (typeof TABS)[number];
 
 const inputCls =
@@ -272,6 +303,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
     description: "",
     difficulty: "beginner",
     format: "long",
+    documentary: false,
     language: "en",
     course_id: "",
     reward: "",
@@ -280,6 +312,16 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
   const [passwordState, setPasswordState] = useState<"idle" | "busy" | "ok" | "error">("idle");
   const [courses, setCourses] = useState<CoursePublic[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [partnerForm, setPartnerForm] = useState({
+    id: "",
+    name: "",
+    logo_url: "",
+    website_url: "",
+    description: "",
+    is_active: true,
+  });
+  const [partnerMsg, setPartnerMsg] = useState("");
 
   const safeLoad = useCallback(
     async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
@@ -297,9 +339,11 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
     async (which: Tab) => {
       setError("");
       setRewardMsg("");
+      setPartnerMsg("");
       if (which === "overview") setStats(await safeLoad(() => api.adminStats(), null as unknown as AdminStats));
       if (which === "videos") setVideos(await safeLoad(() => api.adminVideos(videoFilter), []));
       if (which === "experts") setExperts(await safeLoad(() => api.adminExperts(), []));
+      if (which === "partners") setPartners(await safeLoad(() => api.adminPartners(), []));
       if (which === "users") setUsers(await safeLoad(() => api.adminUsers(), []));
       if (which === "settings") setSettings(await safeLoad(() => api.adminRewardSettings(), null as unknown as RewardSettingsData));
       if (which === "post") {
@@ -401,12 +445,13 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
         description: post.description.trim() || undefined,
         difficulty: post.difficulty,
         format: post.format,
+        documentary: post.documentary,
         language: post.language,
         course_id: post.course_id || undefined,
         reward_amount: post.reward.trim() || undefined,
       });
       setPostState("ok");
-      setPost({ title: "", source_url: "", duration_minutes: "", duration_seconds: "", description: "", difficulty: "beginner", format: "long", language: "en", course_id: "", reward: "" });
+      setPost({ title: "", source_url: "", duration_minutes: "", duration_seconds: "", description: "", difficulty: "beginner", format: "long", documentary: false, language: "en", course_id: "", reward: "" });
     } catch (err) {
       setPostState("idle");
       setError(err instanceof ApiError ? err.message : t.loadError);
@@ -428,6 +473,62 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
     } catch (err) {
       setPasswordState("error");
       setError(err instanceof ApiError ? err.message : t.passwordError);
+    }
+  }
+
+  function resetPartnerForm() {
+    setPartnerForm({ id: "", name: "", logo_url: "", website_url: "", description: "", is_active: true });
+    setPartnerMsg("");
+  }
+
+  function startEditPartner(p: Partner) {
+    setPartnerForm({
+      id: p.id,
+      name: p.name,
+      logo_url: p.logo_url ?? "",
+      website_url: p.website_url ?? "",
+      description: p.description ?? "",
+      is_active: p.is_active,
+    });
+    setPartnerMsg("");
+  }
+
+  async function savePartner() {
+    if (!partnerForm.name.trim()) return;
+    setError("");
+    setPartnerMsg("");
+    const payload = {
+      name: partnerForm.name.trim(),
+      logo_url: partnerForm.logo_url.trim() || undefined,
+      website_url: partnerForm.website_url.trim() || undefined,
+      description: partnerForm.description.trim() || undefined,
+      is_active: partnerForm.is_active,
+    };
+    try {
+      if (partnerForm.id) {
+        await api.adminUpdatePartner(partnerForm.id, payload);
+        setPartnerMsg(t.partnerSaved);
+      } else {
+        await api.adminCreatePartner(payload);
+        setPartnerMsg(t.partnerCreated);
+      }
+      resetPartnerForm();
+      setPartners(await safeLoad(() => api.adminPartners(), []));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t.loadError);
+    }
+  }
+
+  async function deletePartner(id: string) {
+    setError("");
+    try {
+      await api.adminDeletePartner(id);
+      if (partners.some((p) => p.id === id)) {
+        resetPartnerForm();
+      }
+      setPartners(await safeLoad(() => api.adminPartners(), []));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t.loadError);
     }
   }
 
@@ -618,6 +719,96 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
           </section>
         )}
 
+        {tab === "partners" && (
+          <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
+            <div className={partners.length === 0 && !partnerForm.name ? "" : "overflow-x-auto rounded-xl border border-line bg-paper-50"}>
+              {partners.length === 0 && !partnerForm.name ? (
+                <p className="rounded-xl border border-line bg-paper-50 p-6 text-sm text-ink-500">{t.emptyList}</p>
+              ) : (
+                <table className="w-full min-w-[560px] text-sm">
+                  <thead>
+                    <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-500">
+                      <th className="px-4 py-3 text-start">{t.partnerName}</th>
+                      <th className="px-4 py-3 text-start">{t.partnerWebsite}</th>
+                      <th className="px-4 py-3 text-start">{t.partnerActive}</th>
+                      <th className="px-4 py-3 text-start">{t.colActions}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {partners.map((p) => (
+                      <tr key={p.id} className="border-b border-line/60 last:border-0">
+                        <td className="max-w-[220px] truncate px-4 py-3 font-medium text-ink-950">{p.name}</td>
+                        <td className="max-w-[220px] truncate px-4 py-3 text-ink-500">{p.website_url ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.is_active ? "bg-emerald-500/10 text-emerald-700" : "bg-paper-100 text-ink-500"}`}>
+                            {p.is_active ? t.partnerActive : t.filterRejected}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-3">
+                            <button onClick={() => startEditPartner(p)} className={`text-xs font-semibold ${partnerForm.id === p.id ? "text-ink-500" : "text-brass-600 hover:underline"}`}>
+                              {partnerForm.id === p.id ? "✓" : t.save}
+                            </button>
+                            <button onClick={() => deletePartner(p.id)} className="text-xs font-semibold text-red-600 hover:underline">
+                              {t.partnerDelete}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void savePartner();
+              }}
+              className="h-fit rounded-xl border border-line bg-paper-50 p-5"
+            >
+              <h2 className="font-display text-base font-semibold text-ink-950">
+                {partnerForm.id ? t.partnerUpdate : t.partnerNew}
+              </h2>
+              {partnerMsg && <p className="mt-2 text-sm font-medium text-emerald-700">{partnerMsg}</p>}
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.partnerName}</span>
+                <input value={partnerForm.name} onChange={(e) => setPartnerForm({ ...partnerForm, name: e.target.value })} className={inputCls} required />
+              </label>
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.partnerLogo}</span>
+                <input value={partnerForm.logo_url} onChange={(e) => setPartnerForm({ ...partnerForm, logo_url: e.target.value })} className={inputCls} placeholder="https://…" />
+              </label>
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.partnerWebsite}</span>
+                <input value={partnerForm.website_url} onChange={(e) => setPartnerForm({ ...partnerForm, website_url: e.target.value })} className={inputCls} placeholder="https://…" />
+              </label>
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.partnerDesc}</span>
+                <textarea rows={3} value={partnerForm.description} onChange={(e) => setPartnerForm({ ...partnerForm, description: e.target.value })} className={`${inputCls} h-auto py-2`} />
+              </label>
+              <label className="mt-3 flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={partnerForm.is_active}
+                  onChange={(e) => setPartnerForm({ ...partnerForm, is_active: e.target.checked })}
+                  className="h-4 w-4 rounded border-line accent-brass-600"
+                />
+                <span className="text-sm font-medium text-ink-700">{t.partnerActive}</span>
+              </label>
+              <div className="mt-4 flex items-center gap-3">
+                <Button variant="primary" type="submit">{partnerForm.id ? t.save : t.add}</Button>
+                {partnerForm.id && (
+                  <button type="button" onClick={resetPartnerForm} className="text-sm font-semibold text-ink-500 hover:underline">
+                    {t.cancel}
+                  </button>
+                )}
+              </div>
+            </form>
+          </section>
+        )}
+
         {tab === "users" && (
           <section className="mt-8">
             <div className="overflow-x-auto rounded-xl border border-line bg-paper-50">
@@ -729,6 +920,15 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                   <option value="short">{t.shortF}</option>
                   <option value="course">{t.courseF}</option>
                 </select>
+              </label>
+              <label className="mt-4 flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={post.documentary}
+                  onChange={(e) => setPost({ ...post, documentary: e.target.checked })}
+                  className="h-4 w-4 rounded border-line accent-brass-600"
+                />
+                <span className="text-sm font-medium text-ink-700">{t.fDocumentary}</span>
               </label>
               <label className="mt-4 block">
                 <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fReward}</span>

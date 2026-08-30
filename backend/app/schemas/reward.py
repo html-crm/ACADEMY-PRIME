@@ -29,3 +29,28 @@ class ClaimRequestOut(BaseModel):
     claims: list[ClaimOut]
     total_amount: str
     wallet_address: str
+
+
+class LeaderboardEntry(BaseModel):
+    rank: int
+    username: str
+    display_name: str | None
+    avatar_url: str | None
+    total_earned: str
+    earned_count: int
+    is_you: bool = False
+
+
+class LeaderboardOut(BaseModel):
+    items: list[LeaderboardEntry]
+    total_ranked: int
+    generated_at: datetime
+
+
+class LeaderboardMeOut(BaseModel):
+    rank: int | None
+    username: str | None
+    display_name: str | None
+    avatar_url: str | None
+    total_earned: str
+    earned_count: int

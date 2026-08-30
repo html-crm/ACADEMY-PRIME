@@ -18,6 +18,17 @@ INSTAGRAM_PATTERNS = [
 
 VIMEO_PATTERN = r"vimeo\.com/(\d+)"
 
+TIKTOK_PATTERNS = [
+    r"tiktok\.com/@[\w.-]+/video/(\d+)",
+    r"tiktok\.com/@[\w.-]+/photo/(\d+)",
+    r"vt\.tiktok\.com/([\w-]+)",
+    r"vm\.tiktok\.com/([\w-]+)",
+]
+
+DAILYMOTION_PATTERN = r"dailymotion\.com/video/([a-zA-Z0-9]+)"
+
+HTTP_URL_PATTERN = re.compile(r"^https?://", re.IGNORECASE)
+
 
 def detect_provider(url: str) -> tuple[VideoProvider, str | None]:
     url = url.strip()
@@ -32,6 +43,17 @@ def detect_provider(url: str) -> tuple[VideoProvider, str | None]:
     match = re.search(VIMEO_PATTERN, url)
     if match:
         return VideoProvider.VIMEO, match.group(1)
+    for pattern in TIKTOK_PATTERNS:
+        match = re.search(pattern, url)
+        if match:
+            return VideoProvider.TIKTOK, match.group(1)
+    match = re.search(DAILYMOTION_PATTERN, url)
+    if match:
+        return VideoProvider.DAILYMOTION, match.group(1)
+    # Anything else that is a plain http(s) URL is accepted as an external
+    # source (for example a hosted MP4, or another video platform).
+    if HTTP_URL_PATTERN.match(url):
+        return VideoProvider.EXTERNAL, None
     raise ValueError("unsupported_video_url")
 
 

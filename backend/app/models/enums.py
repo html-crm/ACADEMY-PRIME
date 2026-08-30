@@ -24,6 +24,9 @@ class VideoProvider(str, enum.Enum):
     YOUTUBE = "youtube"
     INSTAGRAM = "instagram"
     VIMEO = "vimeo"
+    TIKTOK = "tiktok"
+    DAILYMOTION = "dailymotion"
+    EXTERNAL = "external"
     UPLOADED = "uploaded"
 
 
@@ -46,6 +49,7 @@ class Difficulty(str, enum.Enum):
 class VideoFormat(str, enum.Enum):
     SHORT = "short"
     LONG = "long"
+    COURSE = "course"
 
 
 class VerificationLevel(str, enum.Enum):
