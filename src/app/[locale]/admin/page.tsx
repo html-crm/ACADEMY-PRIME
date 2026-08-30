@@ -85,6 +85,7 @@ const COPY = {
     longF: "Lesson",
     shortF: "Short (≤60s)",
     courseF: "Course",
+    documentaryF: "Documentary",
     fDocumentary: "Documentary",
     fLang: "Language",
     langEn: "English",
@@ -189,6 +190,7 @@ const COPY = {
     longF: "درس",
     shortF: "قصير (≤٦٠ث)",
     courseF: "دورة",
+    documentaryF: "وثائقي",
     fDocumentary: "وثائقي",
     fLang: "اللغة",
     langEn: "English",
@@ -915,20 +917,22 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
               </div>
               <label className="mt-4 block">
                 <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fFormat}</span>
-                <select value={post.format} onChange={(e) => setPost({ ...post, format: e.target.value })} className={inputCls}>
+                <select
+                  value={post.documentary && post.format === "long" ? "documentary" : post.format}
+                  onChange={(e) => {
+                    if (e.target.value === "documentary") {
+                      setPost({ ...post, format: "long", documentary: true });
+                    } else {
+                      setPost({ ...post, format: e.target.value, documentary: false });
+                    }
+                  }}
+                  className={inputCls}
+                >
                   <option value="long">{t.longF}</option>
+                  <option value="documentary">{t.documentaryF}</option>
                   <option value="short">{t.shortF}</option>
                   <option value="course">{t.courseF}</option>
                 </select>
-              </label>
-              <label className="mt-4 flex cursor-pointer items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={post.documentary}
-                  onChange={(e) => setPost({ ...post, documentary: e.target.checked })}
-                  className="h-4 w-4 rounded border-line accent-brass-600"
-                />
-                <span className="text-sm font-medium text-ink-700">{t.fDocumentary}</span>
               </label>
               <label className="mt-4 block">
                 <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fReward}</span>

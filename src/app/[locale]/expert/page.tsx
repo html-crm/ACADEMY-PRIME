@@ -25,6 +25,7 @@ const COPY = {
     type: "Type",
     fDocumentary: "Documentary",
     long: "Lesson (long)",
+    documentary: "Documentary",
     short: "Short (≤60s)",
     course: "Course",
     title: "Title",
@@ -77,6 +78,7 @@ const COPY = {
     type: "النوع",
     fDocumentary: "وثائقي",
     long: "درس (طويل)",
+    documentary: "وثائقي",
     short: "قصير (≤٦٠ث)",
     course: "دورة",
     title: "العنوان",
@@ -368,22 +370,14 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
             <h2 className="font-display text-lg">{editingId ? t.editVideo : t.postNew}</h2>
             <form onSubmit={onSubmitOrSave} className="mt-4 rounded-xl2 border border-line bg-white p-7 shadow-card">
               <div className="grid gap-3 sm:grid-cols-2">
-                <select aria-label={t.type} value={form.format} onChange={(e) => setForm({ ...form, format: e.target.value as FormState["format"] })} className={`${inputCls} px-3`}>
+                <select aria-label={t.type} value={form.documentary && form.format === "long" ? "documentary" : form.format} onChange={(e) => setForm({ ...form, format: e.target.value === "documentary" ? "long" : (e.target.value as FormState["format"]), documentary: e.target.value === "documentary" ? true : false })} className={`${inputCls} px-3`}>
                   <option value="long">{t.long}</option>
+                  <option value="documentary">{t.documentary}</option>
                   <option value="short">{t.short}</option>
                   <option value="course">{t.course}</option>
                 </select>
                 <input required minLength={5} maxLength={200} placeholder={t.title} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
               </div>
-              <label className="mt-3 flex cursor-pointer items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={form.documentary}
-                  onChange={(e) => setForm({ ...form, documentary: e.target.checked })}
-                  className="h-4 w-4 rounded border-line accent-brass-600"
-                />
-                <span className="text-sm font-medium text-ink-700">{t.fDocumentary}</span>
-              </label>
               <input required type="url" placeholder={t.url} value={form.source_url} onChange={(e) => setForm({ ...form, source_url: e.target.value })} className={`${inputCls} mt-3`} />
               <textarea rows={3} maxLength={5000} placeholder={t.description} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-3 w-full rounded-lg border border-line bg-paper-50 px-4 py-3 text-sm outline-none focus:border-brass-400" />
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
