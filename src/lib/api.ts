@@ -278,6 +278,31 @@ export type ClaimRequestResult = {
   wallet_address: string;
 };
 
+export type LeaderboardEntry = {
+  rank: number;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  total_earned: string;
+  earned_count: number;
+  is_you: boolean;
+};
+
+export type LeaderboardOut = {
+  items: LeaderboardEntry[];
+  total_ranked: number;
+  generated_at: string;
+};
+
+export type LeaderboardMeOut = {
+  rank: number | null;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  total_earned: string;
+  earned_count: number;
+};
+
 function qs(params: Record<string, string | number | undefined>): string {
   const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== "");
   return new URLSearchParams(
@@ -329,6 +354,9 @@ export const api = {
   myRewards: () => request<PageOf<RewardLedgerEntry>>("/users/me/rewards?page_size=20"),
   myClaims: () => request<ClaimRow[]>("/users/me/rewards/claims"),
   claimRewards: () => request<ClaimRequestResult>("/users/me/rewards/claims", { method: "POST" }),
+
+  leaderboard: (limit = 50) => request<LeaderboardOut>(`/leaderboard?limit=${limit}`),
+  myLeaderboardStanding: () => request<LeaderboardMeOut>("/leaderboard/me"),
 
   applyExpert: (data: {
     display_name: string;
