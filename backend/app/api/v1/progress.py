@@ -24,6 +24,14 @@ SEEK_TOLERANCE_SECONDS = 5.0
 MAX_HEARTBEAT_GAP_SECONDS = 120.0
 ACCUMULATED_TIME_FACTOR = 0.8
 FIRST_BEAT_MAX_CREDIT = 10.0
+MIN_REQUIRED_PERCENTAGE = Decimal("90")
+
+
+def _effective_required_percentage(video: Video, settings_row: RewardSettings) -> Decimal:
+    return max(
+        (video.required_watch_percentage if video.required_watch_percentage is not None else settings_row.default_watch_percentage),
+        MIN_REQUIRED_PERCENTAGE,
+    )
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -65,11 +73,7 @@ def heartbeat(data: HeartbeatIn, user: CurrentUser, db: DbSession) -> HeartbeatO
         )
 
     settings_row: RewardSettings = get_reward_settings(db)
-    required = float(
-        video.required_watch_percentage
-        if video.required_watch_percentage is not None
-        else settings_row.default_watch_percentage
-    )
+    required = float(_effective_required_percentage(video, settings_row))
 
     now = datetime.now(timezone.utc)
     row = db.scalar(

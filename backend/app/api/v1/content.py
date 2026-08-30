@@ -60,13 +60,16 @@ def _get_reward_settings(db) -> RewardSettings | None:
     return db.get(RewardSettings, 1)
 
 
+MIN_REQUIRED_PERCENTAGE = Decimal("90")
+
+
 def _effective_required_percentage(video: Video, settings_row: RewardSettings | None) -> str:
     value = (
         video.required_watch_percentage
         if video.required_watch_percentage is not None
         else (settings_row.default_watch_percentage if settings_row else Decimal("90"))
     )
-    return f"{value:.1f}"
+    return f"{max(value, MIN_REQUIRED_PERCENTAGE):.1f}"
 
 
 def _public_video(video: Video, settings_row: RewardSettings | None, include_source: bool = False) -> VideoPublicOut:
