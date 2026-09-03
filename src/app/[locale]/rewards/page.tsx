@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Locale } from "@/types/user";
+import { EarnersLeaderboard } from "@/components/rewards/EarnersLeaderboard";
 
 const COPY = {
   en: {
@@ -179,6 +180,9 @@ export default function RewardsPage({ params }: { params: { locale: string } }) 
           </p>
         </div>
       </section>
+
+      {/* Leaderboard */}
+      <EarnersLeaderboard locale={locale} variant="full" />
 
       {/* Connect Wallet */}
       <section className="border-t border-line py-20">

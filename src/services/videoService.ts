@@ -13,7 +13,13 @@ function toCatalogVideo(video: VideoPublic): CatalogVideo {
       ? "youtube"
       : video.provider === "instagram"
         ? "instagram"
-        : detectVideoProvider(sourceUrl);
+        : video.provider === "vimeo"
+          ? "vimeo"
+          : video.provider === "tiktok"
+            ? "tiktok"
+            : video.provider === "dailymotion"
+              ? "dailymotion"
+              : detectVideoProvider(sourceUrl);
   return {
     id: video.id,
     title: video.title,
@@ -95,6 +101,26 @@ export const videoService = {
     return withFallback(
       async () => {
         const page = await api.listVideos({ ...query, format: "short" });
+        return { items: page.items.map(toCatalogVideo), total: page.total };
+      },
+      [],
+    );
+  },
+
+  async listCoursesVideos(query: CatalogQuery = {}): Promise<CatalogPage> {
+    return withFallback(
+      async () => {
+        const page = await api.listVideos({ ...query, format: "course" });
+        return { items: page.items.map(toCatalogVideo), total: page.total };
+      },
+      [],
+    );
+  },
+
+  async listLongVideos(query: CatalogQuery = {}): Promise<CatalogPage> {
+    return withFallback(
+      async () => {
+        const page = await api.listVideos({ ...query, format: "long", exclude_in_course: true });
         return { items: page.items.map(toCatalogVideo), total: page.total };
       },
       [],

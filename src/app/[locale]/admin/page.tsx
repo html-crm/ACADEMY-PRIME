@@ -10,6 +10,7 @@ import {
   type AdminUserRow,
   type RewardSettingsData,
   type CoursePublic,
+  type Partner,
 } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { useSession } from "@/components/session/SessionProvider";
@@ -21,6 +22,7 @@ const COPY = {
     tabOverview: "Overview",
     tabVideos: "Videos",
     tabExperts: "Experts",
+    tabPartners: "Partners",
     tabUsers: "Users",
     tabSettings: "Reward settings",
     tabPost: "Post",
@@ -44,6 +46,7 @@ const COPY = {
     colFormat: "Format",
     colLang: "Lang",
     colStatus: "Status",
+    colReward: "Reward",
     colActions: "Actions",
     approve: "Approve",
     reject: "Reject",
@@ -70,7 +73,7 @@ const COPY = {
     postHeading: "Create a post",
     postSub: "Publish lessons or shorts directly as admin.",
     fTitle: "Title",
-    fUrl: "Video URL (YouTube / Instagram)",
+    fUrl: "Video URL (YouTube, Instagram, Vimeo, TikTok, or other)",
     fDurationMin: "Minutes",
     fDurationSec: "Seconds",
     fDesc: "Description (optional)",
@@ -81,9 +84,15 @@ const COPY = {
     fFormat: "Type",
     longF: "Lesson",
     shortF: "Short (≤60s)",
+    courseF: "Course",
+    documentaryF: "Documentary",
+    fDocumentary: "Documentary",
     fLang: "Language",
     langEn: "English",
     langAr: "العربية",
+    fReward: "Token reward per completion",
+    fRewardEmpty: "Leave empty to use the default",
+    rewardUpdated: "Reward saved",
     submitPost: "Submit for review",
     posting: "Submitting…",
     postOk: "Created! Approve and publish it from the Videos tab.",
@@ -98,6 +107,25 @@ const COPY = {
     passwordsNoMatch: "Passwords do not match",
     courseSelector: "Assign to course (optional)",
     noCourse: "No course (standalone)",
+    partnerName: "Partner name",
+    partnerLogo: "Logo URL",
+    partnerWebsite: "Website URL",
+    partnerDesc: "Description (optional)",
+    partnerActive: "Active",
+    partnerAdd: "Add partner",
+    partnerUpdate: "Update partner",
+    partnerDelete: "Delete",
+    partnerSaved: "Partner saved!",
+    partnerCreated: "Partner created!",
+    partnerNew: "Add a partner",
+    add: "Add",
+    cancel: "Cancel",
+    makeVip: "Make VIP",
+    removeVip: "Remove VIP",
+    makeAdmin: "Make Admin",
+    isVip: "VIP",
+    upgrade: "Upgrade",
+    cannotModifySelf: "You cannot change your own role.",
   },
   ar: {
     heading: "لوحة المشرف",
@@ -105,6 +133,7 @@ const COPY = {
     tabOverview: "نظرة عامة",
     tabVideos: "الفيديوهات",
     tabExperts: "الخبراء",
+    tabPartners: "الشركاء",
     tabUsers: "المستخدمون",
     tabSettings: "إعدادات المكافآت",
     tabPost: "منشور",
@@ -128,6 +157,7 @@ const COPY = {
     colFormat: "النوع",
     colLang: "اللغة",
     colStatus: "الحالة",
+    colReward: "المكافأة",
     colActions: "إجراءات",
     approve: "قبول",
     reject: "رفض",
@@ -154,7 +184,7 @@ const COPY = {
     postHeading: "إنشاء منشور",
     postSub: "انشر الدروس أو المقاطع مباشرة كمشرف.",
     fTitle: "العنوان",
-    fUrl: "رابط الفيديو (يوتيوب / إنستغرام)",
+    fUrl: "رابط الفيديو (يوتيوب، إنستغرام، فيميو، تيك توك، أو مصدر آخر)",
     fDurationMin: "الدقائق",
     fDurationSec: "الثواني",
     fDesc: "الوصف (اختياري)",
@@ -165,9 +195,15 @@ const COPY = {
     fFormat: "النوع",
     longF: "درس",
     shortF: "قصير (≤٦٠ث)",
+    courseF: "دورة",
+    documentaryF: "وثائقي",
+    fDocumentary: "وثائقي",
     fLang: "اللغة",
     langEn: "English",
     langAr: "العربية",
+    fReward: "مكافأة الرمز لكل إتمام",
+    fRewardEmpty: "اتركه فارغًا لاستخدام الافتراضي",
+    rewardUpdated: "تم حفظ المكافأة",
     submitPost: "إرسال للمراجعة",
     posting: "جارٍ الإرسال…",
     postOk: "تم الإنشاء! قبوله وانشره من تبويب الفيديوهات.",
@@ -182,6 +218,25 @@ const COPY = {
     passwordsNoMatch: "كلمتا المرور غير متطابقتين",
     courseSelector: "إضافة إلى دورة (اختياري)",
     noCourse: "بدون دورة (مستقل)",
+    partnerName: "اسم الشريك",
+    partnerLogo: "رابط الشعار",
+    partnerWebsite: "رابط الموقع",
+    partnerDesc: "الوصف (اختياري)",
+    partnerActive: "نشط",
+    partnerAdd: "إضافة شريك",
+    partnerUpdate: "تحديث الشريك",
+    partnerDelete: "حذف",
+    partnerSaved: "تم حفظ الشريك!",
+    partnerCreated: "تم إنشاء الشريك!",
+    partnerNew: "إضافة شريك",
+    add: "إضافة",
+    cancel: "إلغاء",
+    makeVip: "ترقية إلى VIP",
+    removeVip: "إزالة VIP",
+    makeAdmin: "ترقية إلى مشرف",
+    isVip: "VIP",
+    upgrade: "ترقية",
+    cannotModifySelf: "لا يمكنك تغيير دورك بنفسك.",
   },
 };
 
@@ -196,11 +251,47 @@ const TONE: Record<string, string> = {
   suspended: "bg-red-50 text-red-600",
 };
 
-const TABS = ["overview", "post", "videos", "experts", "users", "settings", "password"] as const;
+const TABS = ["overview", "post", "videos", "experts", "partners", "users", "settings", "password"] as const;
 type Tab = (typeof TABS)[number];
 
 const inputCls =
   "h-11 w-full rounded-lg border border-line bg-paper-50 px-4 text-sm outline-none focus:border-brass-400";
+
+function RewardInput({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <input
+        type="number"
+        min={0}
+        step="any"
+        value={draft}
+        placeholder="—"
+        onChange={(e) => {
+          setDraft(e.target.value);
+          setSaved(false);
+        }}
+        className="h-8 w-24 rounded-lg border border-line bg-paper-50 px-2 text-sm outline-none focus:border-brass-400"
+      />
+      <button
+        onClick={() => {
+          onSave(draft);
+          setSaved(true);
+        }}
+        className="rounded-md bg-ink-950 px-2 py-1 text-xs font-semibold text-paper-50 hover:bg-ink-800"
+      >
+        Set
+      </button>
+      {saved && <span className="text-xs text-emerald-700">✓</span>}
+    </div>
+  );
+}
 
 export default function AdminPage({ params }: { params: { locale: string } }) {
   const locale = params.locale === "ar" ? "ar" : "en";
@@ -217,6 +308,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [settings, setSettings] = useState<RewardSettingsData | null>(null);
   const [savedMsg, setSavedMsg] = useState("");
+  const [rewardMsg, setRewardMsg] = useState("");
   const [post, setPost] = useState({
     title: "",
     source_url: "",
@@ -225,13 +317,25 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
     description: "",
     difficulty: "beginner",
     format: "long",
+    documentary: false,
     language: "en",
     course_id: "",
+    reward: "",
   });
   const [postState, setPostState] = useState<"idle" | "busy" | "ok">("idle");
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
   const [passwordState, setPasswordState] = useState<"idle" | "busy" | "ok" | "error">("idle");
   const [courses, setCourses] = useState<CoursePublic[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [partnerForm, setPartnerForm] = useState({
+    id: "",
+    name: "",
+    logo_url: "",
+    website_url: "",
+    description: "",
+    is_active: true,
+  });
+  const [partnerMsg, setPartnerMsg] = useState("");
 
   const safeLoad = useCallback(
     async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
@@ -248,9 +352,12 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
   const loadTab = useCallback(
     async (which: Tab) => {
       setError("");
+      setRewardMsg("");
+      setPartnerMsg("");
       if (which === "overview") setStats(await safeLoad(() => api.adminStats(), null as unknown as AdminStats));
       if (which === "videos") setVideos(await safeLoad(() => api.adminVideos(videoFilter), []));
       if (which === "experts") setExperts(await safeLoad(() => api.adminExperts(), []));
+      if (which === "partners") setPartners(await safeLoad(() => api.adminPartners(), []));
       if (which === "users") setUsers(await safeLoad(() => api.adminUsers(), []));
       if (which === "settings") setSettings(await safeLoad(() => api.adminRewardSettings(), null as unknown as RewardSettingsData));
       if (which === "post") {
@@ -288,6 +395,18 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
     }
   }
 
+  async function saveVideoReward(id: string, reward: string) {
+    setRewardMsg("");
+    const value = reward.trim() === "" ? null : reward.trim();
+    try {
+      await api.adminSetVideoReward(id, value);
+      setVideos((prev) => prev.map((v) => (v.id === id ? { ...v, reward_amount: value } : v)));
+      setRewardMsg(t.rewardUpdated);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t.loadError);
+    }
+  }
+
   async function reviewExpert(id: string, status: string) {
     try {
       await api.adminReviewExpert(id, status);
@@ -301,6 +420,15 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
   async function setUserStatus(id: string, status: string) {
     try {
       await api.adminSetUserStatus(id, status);
+      await loadTab("users");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t.loadError);
+    }
+  }
+
+  async function upgradeUser(id: string, data: { role?: string; is_vip?: boolean }) {
+    try {
+      await api.adminUpgradeUser(id, data);
       await loadTab("users");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t.loadError);
@@ -340,11 +468,13 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
         description: post.description.trim() || undefined,
         difficulty: post.difficulty,
         format: post.format,
+        documentary: post.documentary,
         language: post.language,
         course_id: post.course_id || undefined,
+        reward_amount: post.reward.trim() || undefined,
       });
       setPostState("ok");
-      setPost({ title: "", source_url: "", duration_minutes: "", duration_seconds: "", description: "", difficulty: "beginner", format: "long", language: "en", course_id: "" });
+      setPost({ title: "", source_url: "", duration_minutes: "", duration_seconds: "", description: "", difficulty: "beginner", format: "long", documentary: false, language: "en", course_id: "", reward: "" });
     } catch (err) {
       setPostState("idle");
       setError(err instanceof ApiError ? err.message : t.loadError);
@@ -366,6 +496,62 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
     } catch (err) {
       setPasswordState("error");
       setError(err instanceof ApiError ? err.message : t.passwordError);
+    }
+  }
+
+  function resetPartnerForm() {
+    setPartnerForm({ id: "", name: "", logo_url: "", website_url: "", description: "", is_active: true });
+    setPartnerMsg("");
+  }
+
+  function startEditPartner(p: Partner) {
+    setPartnerForm({
+      id: p.id,
+      name: p.name,
+      logo_url: p.logo_url ?? "",
+      website_url: p.website_url ?? "",
+      description: p.description ?? "",
+      is_active: p.is_active,
+    });
+    setPartnerMsg("");
+  }
+
+  async function savePartner() {
+    if (!partnerForm.name.trim()) return;
+    setError("");
+    setPartnerMsg("");
+    const payload = {
+      name: partnerForm.name.trim(),
+      logo_url: partnerForm.logo_url.trim() || undefined,
+      website_url: partnerForm.website_url.trim() || undefined,
+      description: partnerForm.description.trim() || undefined,
+      is_active: partnerForm.is_active,
+    };
+    try {
+      if (partnerForm.id) {
+        await api.adminUpdatePartner(partnerForm.id, payload);
+        setPartnerMsg(t.partnerSaved);
+      } else {
+        await api.adminCreatePartner(payload);
+        setPartnerMsg(t.partnerCreated);
+      }
+      resetPartnerForm();
+      setPartners(await safeLoad(() => api.adminPartners(), []));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t.loadError);
+    }
+  }
+
+  async function deletePartner(id: string) {
+    setError("");
+    try {
+      await api.adminDeletePartner(id);
+      if (partners.some((p) => p.id === id)) {
+        resetPartnerForm();
+      }
+      setPartners(await safeLoad(() => api.adminPartners(), []));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t.loadError);
     }
   }
 
@@ -448,6 +634,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                 </button>
               ))}
             </div>
+            {rewardMsg && <p className="mt-3 text-sm font-medium text-emerald-700">{rewardMsg}</p>}
             {videos.length === 0 ? (
               <p className="mt-4 text-sm text-ink-500">{t.emptyList}</p>
             ) : (
@@ -459,6 +646,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                       <th className="px-4 py-3 text-start">{t.colFormat}</th>
                       <th className="px-4 py-3 text-start">{t.colLang}</th>
                       <th className="px-4 py-3 text-start">{t.colStatus}</th>
+                      <th className="px-4 py-3 text-start">{t.colReward}</th>
                       <th className="px-4 py-3 text-start">{t.colActions}</th>
                     </tr>
                   </thead>
@@ -472,6 +660,9 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TONE[v.status] ?? "bg-paper-100 text-ink-500"}`}>
                             {v.status}
                           </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <RewardInput value={v.reward_amount ?? ""} onSave={(val) => void saveVideoReward(v.id, val)} />
                         </td>
                         <td className="px-4 py-3">
                           {(v.status === "submitted" || v.status === "under_review" || v.status === "rejected" || v.status === "draft") && (
@@ -551,6 +742,96 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
           </section>
         )}
 
+        {tab === "partners" && (
+          <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
+            <div className={partners.length === 0 && !partnerForm.name ? "" : "overflow-x-auto rounded-xl border border-line bg-paper-50"}>
+              {partners.length === 0 && !partnerForm.name ? (
+                <p className="rounded-xl border border-line bg-paper-50 p-6 text-sm text-ink-500">{t.emptyList}</p>
+              ) : (
+                <table className="w-full min-w-[560px] text-sm">
+                  <thead>
+                    <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-500">
+                      <th className="px-4 py-3 text-start">{t.partnerName}</th>
+                      <th className="px-4 py-3 text-start">{t.partnerWebsite}</th>
+                      <th className="px-4 py-3 text-start">{t.partnerActive}</th>
+                      <th className="px-4 py-3 text-start">{t.colActions}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {partners.map((p) => (
+                      <tr key={p.id} className="border-b border-line/60 last:border-0">
+                        <td className="max-w-[220px] truncate px-4 py-3 font-medium text-ink-950">{p.name}</td>
+                        <td className="max-w-[220px] truncate px-4 py-3 text-ink-500">{p.website_url ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.is_active ? "bg-emerald-500/10 text-emerald-700" : "bg-paper-100 text-ink-500"}`}>
+                            {p.is_active ? t.partnerActive : t.filterRejected}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-3">
+                            <button onClick={() => startEditPartner(p)} className={`text-xs font-semibold ${partnerForm.id === p.id ? "text-ink-500" : "text-brass-600 hover:underline"}`}>
+                              {partnerForm.id === p.id ? "✓" : t.save}
+                            </button>
+                            <button onClick={() => deletePartner(p.id)} className="text-xs font-semibold text-red-600 hover:underline">
+                              {t.partnerDelete}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void savePartner();
+              }}
+              className="h-fit rounded-xl border border-line bg-paper-50 p-5"
+            >
+              <h2 className="font-display text-base font-semibold text-ink-950">
+                {partnerForm.id ? t.partnerUpdate : t.partnerNew}
+              </h2>
+              {partnerMsg && <p className="mt-2 text-sm font-medium text-emerald-700">{partnerMsg}</p>}
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.partnerName}</span>
+                <input value={partnerForm.name} onChange={(e) => setPartnerForm({ ...partnerForm, name: e.target.value })} className={inputCls} required />
+              </label>
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.partnerLogo}</span>
+                <input value={partnerForm.logo_url} onChange={(e) => setPartnerForm({ ...partnerForm, logo_url: e.target.value })} className={inputCls} placeholder="https://…" />
+              </label>
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.partnerWebsite}</span>
+                <input value={partnerForm.website_url} onChange={(e) => setPartnerForm({ ...partnerForm, website_url: e.target.value })} className={inputCls} placeholder="https://…" />
+              </label>
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.partnerDesc}</span>
+                <textarea rows={3} value={partnerForm.description} onChange={(e) => setPartnerForm({ ...partnerForm, description: e.target.value })} className={`${inputCls} h-auto py-2`} />
+              </label>
+              <label className="mt-3 flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={partnerForm.is_active}
+                  onChange={(e) => setPartnerForm({ ...partnerForm, is_active: e.target.checked })}
+                  className="h-4 w-4 rounded border-line accent-brass-600"
+                />
+                <span className="text-sm font-medium text-ink-700">{t.partnerActive}</span>
+              </label>
+              <div className="mt-4 flex items-center gap-3">
+                <Button variant="primary" type="submit">{partnerForm.id ? t.save : t.add}</Button>
+                {partnerForm.id && (
+                  <button type="button" onClick={resetPartnerForm} className="text-sm font-semibold text-ink-500 hover:underline">
+                    {t.cancel}
+                  </button>
+                )}
+              </div>
+            </form>
+          </section>
+        )}
+
         {tab === "users" && (
           <section className="mt-8">
             <div className="overflow-x-auto rounded-xl border border-line bg-paper-50">
@@ -567,22 +848,53 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                   {users.map((u) => (
                     <tr key={u.id} className="border-b border-line/60 last:border-0">
                       <td className="max-w-[240px] truncate px-4 py-3 font-medium text-ink-950">{u.email}</td>
-                      <td className="px-4 py-3 capitalize text-ink-500">{u.role}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="capitalize text-ink-500">{u.role}</span>
+                          {u.is_vip && (
+                            <span className="rounded-full bg-brass-400/20 px-2 py-0.5 text-[10px] font-bold uppercase leading-none text-brass-700">
+                              {t.isVip}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-4 py-3">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TONE[u.status] ?? "bg-paper-100 text-ink-500"}`}>
                           {u.status}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        {u.status === "active" ? (
-                          <button onClick={() => setUserStatus(u.id, "suspended")} className="text-xs font-semibold text-red-600 hover:underline">
-                            {t.suspend}
-                          </button>
-                        ) : (
-                          <button onClick={() => setUserStatus(u.id, "active")} className="text-xs font-semibold text-emerald-700 hover:underline">
-                            {t.activate}
-                          </button>
-                        )}
+                        <div className="flex flex-wrap items-center gap-3">
+                          {u.status === "active" ? (
+                            <button onClick={() => setUserStatus(u.id, "suspended")} className="text-xs font-semibold text-red-600 hover:underline">
+                              {t.suspend}
+                            </button>
+                          ) : (
+                            <button onClick={() => setUserStatus(u.id, "active")} className="text-xs font-semibold text-emerald-700 hover:underline">
+                              {t.activate}
+                            </button>
+                          )}
+                          {me?.id === u.id ? (
+                            <span className="text-xs text-ink-300">{t.cannotModifySelf}</span>
+                          ) : (
+                            <>
+                              {u.is_vip ? (
+                                <button onClick={() => upgradeUser(u.id, { is_vip: false })} className="text-xs font-semibold text-amber-600 hover:underline">
+                                  {t.removeVip}
+                                </button>
+                              ) : (
+                                <button onClick={() => upgradeUser(u.id, { is_vip: true })} className="text-xs font-semibold text-brass-600 hover:underline">
+                                  {t.makeVip}
+                                </button>
+                              )}
+                              {u.role !== "admin" && (
+                                <button onClick={() => upgradeUser(u.id, { role: "admin" })} className="text-xs font-semibold text-ink-700 hover:underline">
+                                  {t.makeAdmin}
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -657,10 +969,34 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
               </div>
               <label className="mt-4 block">
                 <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fFormat}</span>
-                <select value={post.format} onChange={(e) => setPost({ ...post, format: e.target.value })} className={inputCls}>
+                <select
+                  value={post.documentary && post.format === "long" ? "documentary" : post.format}
+                  onChange={(e) => {
+                    if (e.target.value === "documentary") {
+                      setPost({ ...post, format: "long", documentary: true });
+                    } else {
+                      setPost({ ...post, format: e.target.value, documentary: false });
+                    }
+                  }}
+                  className={inputCls}
+                >
                   <option value="long">{t.longF}</option>
+                  <option value="documentary">{t.documentaryF}</option>
                   <option value="short">{t.shortF}</option>
+                  <option value="course">{t.courseF}</option>
                 </select>
+              </label>
+              <label className="mt-4 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fReward}</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="any"
+                  value={post.reward}
+                  placeholder={t.fRewardEmpty}
+                  onChange={(e) => setPost({ ...post, reward: e.target.value })}
+                  className={inputCls}
+                />
               </label>
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <label className="block">

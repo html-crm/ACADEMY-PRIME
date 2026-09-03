@@ -128,6 +128,7 @@ export type VideoPublic = {
   language: string;
   difficulty: string;
   format: string;
+  documentary: boolean;
   effective_reward: string;
   required_watch_percentage: string;
 };
@@ -180,6 +181,7 @@ export type AdminVideoRow = {
   format: string;
   status: string;
   expert_id: string | null;
+  reward_amount: string | null;
   created_at: string;
 };
 
@@ -190,6 +192,7 @@ export type AdminUserRow = {
   role: string;
   status: string;
   risk_score: number;
+  is_vip?: boolean;
   created_at: string;
 };
 
@@ -200,6 +203,16 @@ export type AdminExpertRow = {
   display_name: string;
   headline: string | null;
   review_note: string | null;
+};
+
+export type Partner = {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  website_url: string | null;
+  description: string | null;
+  is_active: boolean;
+  sort_order: number;
 };
 
 export type RewardSettingsData = {
@@ -245,6 +258,7 @@ export type SubmittedVideo = {
   duration_seconds: number | null;
   difficulty: string;
   format: string;
+  documentary: boolean;
   language: string;
   tags: string[];
   status: string;
@@ -277,6 +291,31 @@ export type ClaimRequestResult = {
   wallet_address: string;
 };
 
+export type LeaderboardEntry = {
+  rank: number;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  total_earned: string;
+  earned_count: number;
+  is_you: boolean;
+};
+
+export type LeaderboardOut = {
+  items: LeaderboardEntry[];
+  total_ranked: number;
+  generated_at: string;
+};
+
+export type LeaderboardMeOut = {
+  rank: number | null;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  total_earned: string;
+  earned_count: number;
+};
+
 function qs(params: Record<string, string | number | undefined>): string {
   const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== "");
   return new URLSearchParams(
@@ -297,11 +336,12 @@ export const api = {
     difficulty?: string;
     language?: string;
     format?: string;
+    documentary?: boolean;
     sort?: string;
     page?: number;
     page_size?: number;
     exclude_in_course?: boolean;
-  }) => request<PageOf<VideoPublic>>(`/content/videos?${qs({ ...params, exclude_in_course: params.exclude_in_course ? "true" : undefined })}`),
+  }) => request<PageOf<VideoPublic>>(`/content/videos?${qs({ ...params, exclude_in_course: params.exclude_in_course ? "true" : undefined, documentary: params.documentary === undefined ? undefined : (params.documentary ? "true" : "false") })}`),
   getVideo: (id: string) => request<VideoPublic>(`/content/videos/${id}`),
   listCategories: () => request<{ id: string; name: string; slug: string }[]>("/content/categories"),
   listCourses: (params: {
@@ -310,7 +350,9 @@ export const api = {
     sort?: string;
     page?: number;
     page_size?: number;
-  } = {}) => request<PageOf<CoursePublic>>(`/content/courses?${qs(params)}`),
+  } = {  }) => request<PageOf<CoursePublic>>(`/content/courses?${qs(params)}`),
+
+  listPartners: () => request<Partner[]>("/content/partners"),
 
   heartbeat: (data: {
     video_id: string;
@@ -329,6 +371,9 @@ export const api = {
   myClaims: () => request<ClaimRow[]>("/users/me/rewards/claims"),
   claimRewards: () => request<ClaimRequestResult>("/users/me/rewards/claims", { method: "POST" }),
 
+  leaderboard: (limit = 50) => request<LeaderboardOut>(`/leaderboard?limit=${limit}`),
+  myLeaderboardStanding: () => request<LeaderboardMeOut>("/leaderboard/me"),
+
   applyExpert: (data: {
     display_name: string;
     headline?: string;
@@ -343,6 +388,7 @@ export const api = {
     duration_seconds: number;
     difficulty: string;
     format: string;
+    documentary?: boolean;
     language?: string;
     tags?: string[];
     course_id?: string;
@@ -357,6 +403,7 @@ export const api = {
       duration_seconds: number;
       difficulty: string;
       format: string;
+      documentary?: boolean;
       language: string;
       tags: string[];
     }>,
@@ -381,11 +428,21 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ action, note }),
     }),
+  adminSetVideoReward: (id: string, reward_amount: string | null) =>
+    request<{ id: string; reward_amount: string | null }>(`/admin/videos/${id}/reward`, {
+      method: "PATCH",
+      body: JSON.stringify({ reward_amount }),
+    }),
   adminUsers: () => request<AdminUserRow[]>("/admin/users?page_size=100"),
   adminSetUserStatus: (id: string, status: string) =>
     request<AdminUserRow>(`/admin/users/${id}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status }),
+    }),
+  adminUpgradeUser: (id: string, data: { role?: string; is_vip?: boolean }) =>
+    request<AdminUserRow>(`/admin/users/${id}/upgrade`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
     }),
   adminExperts: (status?: string) =>
     request<AdminExpertRow[]>(`/admin/experts?${qs({ status_filter: status })}`),
@@ -394,6 +451,28 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ status, note }),
     }),
+  adminPartners: () => request<Partner[]>("/admin/partners"),
+  adminCreatePartner: (data: {
+    name: string;
+    logo_url?: string;
+    website_url?: string;
+    description?: string;
+    is_active?: boolean;
+    sort_order?: number;
+  }) => request<Partner>("/admin/partners", { method: "POST", body: JSON.stringify(data) }),
+  adminUpdatePartner: (
+    id: string,
+    data: Partial<{
+      name: string;
+      logo_url: string | null;
+      website_url: string | null;
+      description: string | null;
+      is_active: boolean;
+      sort_order: number;
+    }>,
+  ) => request<Partner>(`/admin/partners/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  adminDeletePartner: (id: string) =>
+    request<void>(`/admin/partners/${id}`, { method: "DELETE" }),
   adminRewardSettings: () => request<RewardSettingsData>("/admin/settings/rewards"),
   adminUpdateRewardSettings: (data: Partial<RewardSettingsData>) =>
     request<RewardSettingsData>("/admin/settings/rewards", {
@@ -414,9 +493,11 @@ export const api = {
     duration_seconds: number;
     difficulty: string;
     format: string;
+    documentary?: boolean;
     language?: string;
     tags?: string[];
     course_id?: string;
+    reward_amount?: string;
   }) => request<{ id: string; title: string; status: string }>("/admin/videos", {
     method: "POST",
     body: JSON.stringify(data),

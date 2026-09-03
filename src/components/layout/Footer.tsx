@@ -46,8 +46,7 @@ export function Footer({ locale, dict }: FooterProps) {
       heading: footer.product,
       links: [
         [nav.courses, `/${locale}/courses`],
-        [nav.shortVideos, `/${locale}/shorts`],
-        [nav.longVideos, `/${locale}/videos`],
+        [nav.videoLibrary, `/${locale}/library`],
         [nav.rewards, `/${locale}/rewards`],
       ],
     },
@@ -55,7 +54,7 @@ export function Footer({ locale, dict }: FooterProps) {
       heading: footer.company,
       links: [
         [nav.about, `/${locale}/about`],
-        [nav.experts, `/${locale}/experts`],
+        [nav.partners, `/${locale}/partners`],
         [nav.learn, `/${locale}/learn`],
       ],
     },

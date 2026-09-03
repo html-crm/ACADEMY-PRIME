@@ -12,10 +12,12 @@ interface CoursesExplorerProps {
 
 function formatDuration(seconds: number): string {
   if (!seconds) return "—";
-  const hrs = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  if (hrs > 0) return `${hrs}h ${mins}m`;
-  return `${mins} min`;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const mm = String(m).padStart(2, "0");
+  const base = `${mm}:${String(s).padStart(2, "0")}`;
+  return h > 0 ? `${h}:${base}` : base;
 }
 
 export function CoursesExplorer({ copy, locale }: CoursesExplorerProps) {

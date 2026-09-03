@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { videoService } from "@/services/videoService";
 import type { CatalogVideo } from "@/types/video";
 import { mockShorts } from "@/data/shorts.mock";
-import { youTubeEmbedUrl } from "@/lib/videoProviders";
+import { youTubeEmbedUrl, vimeoEmbedUrl, dailymotionEmbedUrl } from "@/lib/videoProviders";
 import { api, getAccessToken } from "@/lib/api";
 import type { Dictionary } from "@/lib/i18n";
 
@@ -106,10 +106,16 @@ export function ShortsFeed({ copy, locale }: ShortsFeedProps) {
           >
             <div className="relative mx-auto flex h-full w-full max-w-[420px] flex-col overflow-hidden rounded-xl2 bg-ink-950 shadow-elevated">
               <div className="relative flex-1">
-                {video.provider === "youtube" && video.providerVideoId ? (
+                {["youtube", "vimeo", "dailymotion"].includes(video.provider) && video.providerVideoId ? (
                   active ? (
                     <iframe
-                      src={youTubeEmbedUrl(video.providerVideoId, { autoplay: true, mute: false })}
+                      src={
+                        video.provider === "youtube"
+                          ? youTubeEmbedUrl(video.providerVideoId, { autoplay: true, mute: false })
+                          : video.provider === "vimeo"
+                            ? vimeoEmbedUrl(video.providerVideoId, { autoplay: true })
+                            : dailymotionEmbedUrl(video.providerVideoId)
+                      }
                       title={video.title}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
@@ -131,7 +137,7 @@ export function ShortsFeed({ copy, locale }: ShortsFeedProps) {
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-5 pb-7 text-start">
                   <p className="font-display text-lg leading-snug text-white">{video.title}</p>
                   <div className="mt-2 flex items-center gap-3 text-xs text-white/70">
-                    <span>{video.durationSeconds}s</span>
+                    <span>{`${String(Math.floor(video.durationSeconds / 60)).padStart(2, "0")}:${String(video.durationSeconds % 60).padStart(2, "0")}`}</span>
                     <span>·</span>
                     <span className="font-semibold text-brass-300">+{video.reward} ACAD-P</span>
                   </div>

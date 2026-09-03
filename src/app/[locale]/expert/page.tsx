@@ -10,7 +10,7 @@ type Earnings = Awaited<ReturnType<typeof api.myExpertEarnings>>;
 const COPY = {
   en: {
     heading: "Expert Studio",
-    subhead: "Post lessons and shorts. Approved posts go live after admin review.",
+    subhead: "Post lessons, shorts and courses. Approved posts go live after admin review.",
     applyTitle: "Become an expert",
     displayName: "Display name",
     headline: "Headline",
@@ -23,12 +23,17 @@ const COPY = {
     postNew: "Post a video",
     editVideo: "Edit video",
     type: "Type",
+    fDocumentary: "Documentary",
     long: "Lesson (long)",
+    documentary: "Documentary",
     short: "Short (≤60s)",
+    course: "Course",
     title: "Title",
-    url: "Video URL (YouTube / Instagram link)",
+    url: "Video URL (YouTube, Instagram, Vimeo, TikTok, or other)",
     description: "Description",
-    duration: "Duration in seconds",
+    durationMin: "Duration (minutes)",
+    durationSec: "Seconds",
+    duration: "Duration",
     difficulty: "Difficulty",
     beginner: "Beginner",
     intermediate: "Intermediate",
@@ -58,7 +63,7 @@ const COPY = {
   },
   ar: {
     heading: "استوديو الخبير",
-    subhead: "انشر الدروس والمقاطع القصيرة. تُنشر الموافقة بعد مراجعة المشرف.",
+    subhead: "انشر الدروس والمقاطع والدورات. تُنشر الموافقة بعد مراجعة المشرف.",
     applyTitle: "كن خبيراً",
     displayName: "الاسم الظاهر",
     headline: "العنوان الوصفي",
@@ -71,12 +76,17 @@ const COPY = {
     postNew: "انشر فيديو",
     editVideo: "تعديل الفيديو",
     type: "النوع",
+    fDocumentary: "وثائقي",
     long: "درس (طويل)",
+    documentary: "وثائقي",
     short: "قصير (≤٦٠ث)",
+    course: "دورة",
     title: "العنوان",
-    url: "رابط الفيديو (يوتيوب / إنستغرام)",
+    url: "رابط الفيديو (يوتيوب، إنستغرام، فيميو، تيك توك، أو مصدر آخر)",
     description: "الوصف",
-    duration: "المدة بالثواني",
+    durationMin: "المدة (بالدقائق)",
+    durationSec: "الثواني",
+    duration: "المدة",
     difficulty: "المستوى",
     beginner: "مبتدئ",
     intermediate: "متوسط",
@@ -118,13 +128,22 @@ const STATUS_TONE: Record<string, string> = {
 const inputCls =
   "h-11 w-full rounded-lg border border-line bg-paper-50 px-4 text-sm outline-none focus:border-brass-400";
 
+const fmtDuration = (s: number | null | undefined): string => {
+  if (!s || s <= 0) return "—";
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+};
+
 interface FormState {
   title: string;
   source_url: string;
   description: string;
+  duration_minutes: string;
   duration_seconds: string;
   difficulty: string;
-  format: "long" | "short";
+  format: "long" | "short" | "course";
+  documentary: boolean;
   language: string;
   course_id: string;
 }
@@ -133,9 +152,11 @@ const EMPTY_FORM: FormState = {
   title: "",
   source_url: "",
   description: "",
+  duration_minutes: "",
   duration_seconds: "",
   difficulty: "beginner",
   format: "long",
+  documentary: false,
   language: "en",
   course_id: "",
 };
@@ -221,14 +242,17 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
   }
 
   function startEdit(video: SubmittedVideo) {
+    const total = Math.max(0, Number(video.duration_seconds) || 0);
     setEditingId(video.id);
     setForm({
       title: video.title,
       source_url: video.source_url,
       description: video.description ?? "",
-      duration_seconds: String(video.duration_seconds ?? ""),
+      duration_minutes: String(Math.floor(total / 60)),
+      duration_seconds: String(total % 60),
       difficulty: video.difficulty,
-      format: video.format === "short" ? "short" : "long",
+      format: video.format === "short" ? "short" : video.format === "course" ? "course" : "long",
+      documentary: video.documentary,
       language: video.language || "en",
       course_id: "",
     });
@@ -248,7 +272,9 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
     e.preventDefault();
     setFormError(null);
     setFormNotice(null);
-    const duration = Number(form.duration_seconds);
+    const mins = Number(form.duration_minutes) || 0;
+    const secs = Number(form.duration_seconds) || 0;
+    const duration = mins * 60 + secs;
     if (!Number.isFinite(duration) || duration <= 0) return;
     if (form.format === "short" && duration > 60) {
       setFormError(t.shortTooLong);
@@ -263,6 +289,7 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
         duration_seconds: Math.round(duration),
         difficulty: form.difficulty,
         format: form.format,
+        documentary: form.documentary,
         language: form.language,
         course_id: form.course_id || undefined,
       };
@@ -343,16 +370,25 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
             <h2 className="font-display text-lg">{editingId ? t.editVideo : t.postNew}</h2>
             <form onSubmit={onSubmitOrSave} className="mt-4 rounded-xl2 border border-line bg-white p-7 shadow-card">
               <div className="grid gap-3 sm:grid-cols-2">
-                <select aria-label={t.type} value={form.format} onChange={(e) => setForm({ ...form, format: e.target.value as FormState["format"] })} className={`${inputCls} px-3`}>
+                <select aria-label={t.type} value={form.documentary && form.format === "long" ? "documentary" : form.format} onChange={(e) => setForm({ ...form, format: e.target.value === "documentary" ? "long" : (e.target.value as FormState["format"]), documentary: e.target.value === "documentary" ? true : false })} className={`${inputCls} px-3`}>
                   <option value="long">{t.long}</option>
+                  <option value="documentary">{t.documentary}</option>
                   <option value="short">{t.short}</option>
+                  <option value="course">{t.course}</option>
                 </select>
                 <input required minLength={5} maxLength={200} placeholder={t.title} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
               </div>
               <input required type="url" placeholder={t.url} value={form.source_url} onChange={(e) => setForm({ ...form, source_url: e.target.value })} className={`${inputCls} mt-3`} />
               <textarea rows={3} maxLength={5000} placeholder={t.description} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-3 w-full rounded-lg border border-line bg-paper-50 px-4 py-3 text-sm outline-none focus:border-brass-400" />
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                <input required type="number" min={1} placeholder={t.duration} value={form.duration_seconds} onChange={(e) => setForm({ ...form, duration_seconds: e.target.value })} className={inputCls} />
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.durationMin}</span>
+                  <input required type="number" min={0} placeholder="0" value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })} className={inputCls} />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.durationSec}</span>
+                  <input required type="number" min={0} max={59} placeholder="0" value={form.duration_seconds} onChange={(e) => setForm({ ...form, duration_seconds: e.target.value })} className={inputCls} />
+                </label>
                 <select aria-label={t.difficulty} value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value })} className={`${inputCls} px-3`}>
                   <option value="beginner">{t.beginner}</option>
                   <option value="intermediate">{t.intermediate}</option>
@@ -407,7 +443,7 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
                   <div className="min-w-0 flex-1">
                     <h3 className="truncate text-sm font-semibold text-ink-950">{video.title}</h3>
                     <p className="mt-0.5 text-xs text-ink-300">
-                      {video.format === "short" ? t.short : t.long} · {video.duration_seconds ?? "?"}s
+                      {video.format === "short" ? t.short : video.format === "course" ? t.course : t.long} · {fmtDuration(video.duration_seconds)}
                     </p>
                   </div>
                   <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold capitalize ${STATUS_TONE[video.status] ?? "bg-paper-100 text-ink-500"}`}>

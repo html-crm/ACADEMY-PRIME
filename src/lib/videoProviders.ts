@@ -2,6 +2,9 @@ import { VideoProviderKind } from "@/types/video";
 
 const YOUTUBE_HOSTS = ["youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"];
 const INSTAGRAM_HOSTS = ["instagram.com", "www.instagram.com"];
+const VIMEO_HOSTS = ["vimeo.com", "player.vimeo.com"];
+const TIKTOK_HOSTS = ["tiktok.com", "www.tiktok.com", "vt.tiktok.com", "vm.tiktok.com"];
+const DAILYMOTION_HOSTS = ["dailymotion.com", "www.dailymotion.com", "geo.dailymotion.com"];
 
 /**
  * Detects the playback provider from a submitted URL.
@@ -20,6 +23,9 @@ export function detectVideoProvider(url: string): VideoProviderKind {
   const host = parsed.hostname.toLowerCase();
   if (YOUTUBE_HOSTS.includes(host)) return "youtube";
   if (INSTAGRAM_HOSTS.includes(host)) return "instagram";
+  if (VIMEO_HOSTS.includes(host)) return "vimeo";
+  if (TIKTOK_HOSTS.includes(host)) return "tiktok";
+  if (DAILYMOTION_HOSTS.includes(host)) return "dailymotion";
   return "external";
 }
 
@@ -76,4 +82,19 @@ export function youTubeEmbedUrl(
 
 export function instagramEmbedUrl(code: string): string {
   return `https://www.instagram.com/p/${code}/embed`;
+}
+
+export function vimeoEmbedUrl(
+  videoId: string,
+  options: { autoplay?: boolean; title?: boolean; byline?: boolean } = {},
+): string {
+  const params = new URLSearchParams({ title: "0", byline: "0", portrait: "0" });
+  if (options.autoplay) params.set("autoplay", "1");
+  if (options.title) params.set("title", "1");
+  if (options.byline) params.set("byline", "1");
+  return `https://player.vimeo.com/video/${videoId}?${params.toString()}`;
+}
+
+export function dailymotionEmbedUrl(videoId: string): string {
+  return `https://www.dailymotion.com/embed/video/${videoId}`;
 }
