@@ -16,6 +16,7 @@ from app.models.enums import (
     VideoProvider,
 )
 from app.models.expert import Expert
+from app.models.partner import Partner
 from app.models.platform import AuditLog, Country, Favorite, Notification, PlatformSetting, Report
 from app.models.progress import CourseEnrollment, VideoCompletion, VideoProgress
 from app.models.reward import (
@@ -31,7 +32,7 @@ __all__ = [
     "AccountStatus", "AuditLog", "BlockchainTransaction", "Category", "ClaimStatus",
     "ContentStatus", "Country", "Course", "CourseEnrollment", "Difficulty",
     "EarningStatus", "Expert", "ExpertEarning", "ExpertStatus", "Favorite",
-    "Notification", "NotificationChannel", "PlatformSetting", "RefreshToken",
+    "Notification", "NotificationChannel", "Partner", "PlatformSetting", "RefreshToken",
     "Report", "ReportStatus", "Reward", "RewardClaim", "RewardEntryType",
     "RewardSettings", "RewardStatus", "User", "UserProfile", "UserRole",
     "VerificationLevel", "Video", "VideoCompletion", "VideoFormat",

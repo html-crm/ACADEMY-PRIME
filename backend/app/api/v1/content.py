@@ -37,6 +37,7 @@ class VideoPublicOut(BaseModel):
     language: str
     difficulty: str
     format: str
+    documentary: bool
     effective_reward: str
     required_watch_percentage: str
 
@@ -59,13 +60,16 @@ def _get_reward_settings(db) -> RewardSettings | None:
     return db.get(RewardSettings, 1)
 
 
+MIN_REQUIRED_PERCENTAGE = Decimal("90")
+
+
 def _effective_required_percentage(video: Video, settings_row: RewardSettings | None) -> str:
     value = (
         video.required_watch_percentage
         if video.required_watch_percentage is not None
         else (settings_row.default_watch_percentage if settings_row else Decimal("90"))
     )
-    return f"{value:.1f}"
+    return f"{max(value, MIN_REQUIRED_PERCENTAGE):.1f}"
 
 
 def _public_video(video: Video, settings_row: RewardSettings | None, include_source: bool = False) -> VideoPublicOut:
@@ -82,6 +86,7 @@ def _public_video(video: Video, settings_row: RewardSettings | None, include_sou
         language=video.language,
         difficulty=video.difficulty.value,
         format=video.format.value,
+        documentary=video.documentary,
         effective_reward=_effective_reward(video, settings_row),
         required_watch_percentage=_effective_required_percentage(video, settings_row),
     )
@@ -94,6 +99,7 @@ def list_videos(
     difficulty: str | None = Query(default=None),
     language: str | None = Query(default=None),
     format: str | None = Query(default=None),
+    documentary: bool | None = Query(default=None),
     category_id: UUID | None = Query(default=None),
     exclude_in_course: bool = Query(default=False),
     sort: str = Query(default="newest", pattern="^(newest|popular|reward)$"),
@@ -116,6 +122,9 @@ def list_videos(
     if format:
         base = base.where(Video.format == format)
         count_query = count_query.where(Video.format == format)
+    if documentary is not None:
+        base = base.where(Video.documentary.is_(documentary))
+        count_query = count_query.where(Video.documentary.is_(documentary))
     if exclude_in_course:
         course_video_ids = select(course_videos.c.video_id)
         base = base.where(Video.id.notin_(course_video_ids))
@@ -164,7 +173,7 @@ def list_courses(
     difficulty: str | None = Query(default=None),
     sort: str = Query(default="newest", pattern="^(newest|popular|reward)$"),
     page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=12, ge=1, le=50),
+    page_size: int = Query(default=12, ge=1, le=200),
 ) -> Page[CourseOut]:
     base = (
         select(

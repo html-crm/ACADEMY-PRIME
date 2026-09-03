@@ -35,6 +35,7 @@ class VideoSubmitIn(BaseModel):
     language: str = Field(default="en", pattern=r"^[a-z]{2}(-[A-Za-z]{2})?$")
     difficulty: Difficulty = Difficulty.BEGINNER
     format: VideoFormat = VideoFormat.LONG
+    documentary: bool = False
     tags: list[str] = Field(default_factory=list, max_length=20)
     learning_objectives: list[str] = Field(default_factory=list, max_length=20)
     course_id: UUID | None = None
@@ -54,6 +55,7 @@ class VideoSubmitOut(BaseModel):
     duration_seconds: int | None
     difficulty: str
     format: str
+    documentary: bool
     language: str
     tags: list[str]
 
@@ -155,6 +157,7 @@ def submit_video(data: VideoSubmitIn, request: Request, user: CurrentUser, db: D
         language=data.language,
         difficulty=data.difficulty,
         format=data.format,
+        documentary=data.documentary,
         tags=data.tags,
         learning_objectives=data.learning_objectives,
         status=ContentStatus.DRAFT if data.as_draft else ContentStatus.SUBMITTED,
@@ -196,6 +199,7 @@ class VideoUpdateIn(BaseModel):
     duration_seconds: int | None = Field(default=None, gt=0, le=86400 * 4)
     difficulty: Difficulty | None = None
     format: VideoFormat | None = None
+    documentary: bool | None = None
     language: str | None = Field(default=None, min_length=2, max_length=5)
     tags: list[str] | None = Field(default=None, max_length=20)
 
@@ -223,6 +227,7 @@ def _video_out(v: Video) -> VideoSubmitOut:
         duration_seconds=v.duration_seconds,
         difficulty=v.difficulty.value,
         format=v.format.value,
+        documentary=v.documentary,
         language=v.language,
         tags=v.tags or [],
     )
@@ -274,6 +279,8 @@ def update_video(
     # except drafts which keep their draft state.
     if data.format is not None and data.format != video.format:
         video.format = data.format
+    if data.documentary is not None:
+        video.documentary = data.documentary
     if video.status != ContentStatus.DRAFT:
         video.status = ContentStatus.SUBMITTED
 

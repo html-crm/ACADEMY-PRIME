@@ -107,19 +107,31 @@ def test_invalid_transition_rejected(client, db):
     assert publish_directly.status_code == 409
 
 
-def test_unsupported_url_rejected(client, db):
+def test_external_url_accepted_and_non_http_rejected(client, db):
     creator = make_user(db)
     headers, _ = _approve_expert(client, db, creator)
-    response = client.post(
+    external = client.post(
         "/api/v1/experts/videos",
         json={
-            "title": "Some random link",
+            "title": "Hosted video",
             "source_url": "https://example.com/video.mp4",
             "duration_seconds": 60,
         },
         headers=headers,
     )
-    assert response.status_code == 422
+    assert external.status_code == 201
+    assert external.json()["provider"] == "external"
+
+    garbage = client.post(
+        "/api/v1/experts/videos",
+        json={
+            "title": "Bad source",
+            "source_url": "file:///etc/passwd",
+            "duration_seconds": 60,
+        },
+        headers=headers,
+    )
+    assert garbage.status_code == 422
 
 
 def test_category_crud(client, db):
@@ -135,3 +147,29 @@ def test_category_crud(client, db):
     assert duplicate.status_code == 409
     listing = client.get("/api/v1/content/categories").json()
     assert any(c["slug"] == "nft-basics" for c in listing)
+
+
+def test_required_watch_percentage_floor_is_90(client, db):
+    from decimal import Decimal
+    from uuid import UUID
+
+    from app.models.content import Video
+
+    creator = make_user(db)
+    headers, admin_headers = _approve_expert(client, db, creator)
+    submitted = _submit(client, headers, title="DeFi floor test", duration=600)
+    video_id = submitted.json()["id"]
+    client.patch(
+        f"/api/v1/admin/videos/{video_id}/review", json={"action": "approve"}, headers=admin_headers
+    )
+    client.patch(
+        f"/api/v1/admin/videos/{video_id}/review", json={"action": "publish"}, headers=admin_headers
+    )
+
+    video = db.get(Video, UUID(video_id))
+    video.required_watch_percentage = Decimal("50")
+    db.commit()
+
+    public = client.get(f"/api/v1/content/videos/{video_id}")
+    assert public.status_code == 200
+    assert public.json()["required_watch_percentage"] == "90.0"

@@ -61,6 +61,7 @@ class Video(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     language: Mapped[str] = mapped_column(String(5), default="en", nullable=False)
     difficulty: Mapped[Difficulty] = mapped_column(StrEnum(Difficulty), default=Difficulty.BEGINNER, nullable=False)
     format: Mapped[VideoFormat] = mapped_column(StrEnum(VideoFormat), default=VideoFormat.LONG, nullable=False)
+    documentary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     status: Mapped[ContentStatus] = mapped_column(
         StrEnum(ContentStatus), default=ContentStatus.DRAFT, nullable=False
     )

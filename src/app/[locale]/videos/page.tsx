@@ -60,6 +60,7 @@ export default function LongVideosPage({ params }: { params: { locale: string } 
   }, [t.loadError]);
 
   const loading = docs === null || regular === null;
+  const docsLoaded = docs !== null && docs.length > 0;
 
   return (
     <main className="min-h-screen bg-paper-100 pb-20" dir={rtl ? "rtl" : "ltr"}>
@@ -77,25 +78,27 @@ export default function LongVideosPage({ params }: { params: { locale: string } 
               <div key={i} className="h-64 animate-pulse rounded-xl bg-paper-200" />
             ))}
           </div>
+        ) : !docsLoaded && (regular?.length ?? 0) === 0 ? (
+          <p className="mt-10 rounded-xl border border-dashed border-line bg-paper-50 p-12 text-center text-sm text-ink-500">
+            {t.empty}
+          </p>
         ) : (
           <>
-            <section className="mt-8">
-              <h2 className="font-display text-2xl font-semibold text-ink-950">{t.documentaries}</h2>
-              {docs && docs.length > 0 ? (
+            {docsLoaded && (
+              <section className="mt-8">
+                <h2 className="font-display text-2xl font-semibold text-ink-950">{t.documentaries}</h2>
                 <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {docs.map((v) => (
+                  {docs!.map((v) => (
                     <VideoCard key={v.id} v={v} locale={locale} t={t} />
                   ))}
                 </div>
-              ) : (
-                <p className="mt-4 rounded-xl border border-dashed border-line bg-paper-50 p-8 text-center text-sm text-ink-500">
-                  {t.docsEmpty}
-                </p>
-              )}
-            </section>
+              </section>
+            )}
             {(regular?.length ?? 0) > 0 && (
               <section className="mt-8">
-                <h2 className="font-display text-2xl font-semibold text-ink-950">{t.heading}</h2>
+                {docsLoaded && (
+                  <h2 className="font-display text-2xl font-semibold text-ink-950">{t.heading}</h2>
+                )}
                 <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {regular!.map((v) => (
                     <VideoCard key={v.id} v={v} locale={locale} t={t} />
