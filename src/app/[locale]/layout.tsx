@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, Markazi_Text, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { Inter, IBM_Plex_Sans_Arabic } from "next/font/google";
 import clsx from "clsx";
 import { isLocale, defaultLocale, getLocaleConfig, getDictionary, locales } from "@/lib/i18n";
 import { Locale } from "@/types/user";
@@ -8,21 +8,9 @@ import { Footer } from "@/components/layout/Footer";
 import { SessionProvider } from "@/components/session/SessionProvider";
 import "@/app/globals.css";
 
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-});
-
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-body",
-  display: "swap",
-});
-
-const markaziText = Markazi_Text({
-  subsets: ["arabic"],
-  variable: "--font-display-ar",
   display: "swap",
 });
 
@@ -121,9 +109,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
       lang={locale}
       dir={dir}
       className={clsx(
-        fraunces.variable,
         inter.variable,
-        markaziText.variable,
         plexArabic.variable,
       )}
     >

@@ -129,6 +129,11 @@ export function CoursesExplorer({ copy, locale }: CoursesExplorerProps) {
                   </div>
                   <div className="flex flex-1 flex-col gap-3 p-5">
                     <h3 className="font-display text-lg leading-snug text-ink-950">{course.title}</h3>
+                    {course.ownerName && (
+                      <p className="text-xs font-semibold text-brass-600">
+                        {copy.byExpert} {course.ownerName}
+                      </p>
+                    )}
                     <p className="line-clamp-2 text-sm leading-relaxed text-ink-500">{course.description}</p>
                     <div className="mt-auto flex items-center justify-between border-t border-line pt-4 text-xs text-ink-500">
                       <span>{course.videoCount} {course.videoCount === 1 ? "lesson" : "lessons"}</span>

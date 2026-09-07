@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-display: var(--font-body);
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display-ar: "Markazi Text", ui-serif, serif;
+  --font-display-ar: var(--font-body-ar);
   --font-body-ar: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
 }
 

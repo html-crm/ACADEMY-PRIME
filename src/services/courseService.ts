@@ -14,7 +14,7 @@ function toCourse(video: VideoPublic): Course {
     difficulty: (video.difficulty as Course["difficulty"]) ?? "beginner",
     thumbnailUrl: video.thumbnail_url ?? "",
     instructor: {
-      name: "ACADEMY PRIME",
+      name: video.owner_name || "ACADEMY PRIME",
       avatarUrl: "",
       title: "Verified Expert",
     },

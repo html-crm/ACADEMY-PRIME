@@ -126,6 +126,12 @@ const COPY = {
     isVip: "VIP",
     upgrade: "Upgrade",
     cannotModifySelf: "You cannot change your own role.",
+    addExpert: "Add expert",
+    expertName: "Expert name",
+    expertHeadline: "Headline (optional)",
+    expertBio: "Bio (optional)",
+    expertAdded: "Expert added!",
+    expertNameRequired: "Enter the expert name.",
   },
   ar: {
     heading: "لوحة المشرف",
@@ -237,6 +243,12 @@ const COPY = {
     isVip: "VIP",
     upgrade: "ترقية",
     cannotModifySelf: "لا يمكنك تغيير دورك بنفسك.",
+    addExpert: "إضافة خبير",
+    expertName: "اسم الخبير",
+    expertHeadline: "الوصف (اختياري)",
+    expertBio: "السيرة (اختياري)",
+    expertAdded: "تمت إضافة الخبير!",
+    expertNameRequired: "أدخل اسم الخبير.",
   },
 };
 
@@ -336,6 +348,8 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
     is_active: true,
   });
   const [partnerMsg, setPartnerMsg] = useState("");
+  const [expertForm, setExpertForm] = useState({ display_name: "", headline: "", bio: "" });
+  const [expertMsg, setExpertMsg] = useState("");
 
   const safeLoad = useCallback(
     async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
@@ -410,6 +424,29 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
   async function reviewExpert(id: string, status: string) {
     try {
       await api.adminReviewExpert(id, status);
+      await loadTab("experts");
+      if (stats) setStats(await safeLoad(() => api.adminStats(), stats));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t.loadError);
+    }
+  }
+
+  async function saveExpert() {
+    if (!expertForm.display_name.trim()) {
+      setExpertMsg("");
+      setError(t.expertNameRequired);
+      return;
+    }
+    setError("");
+    setExpertMsg("");
+    try {
+      await api.adminCreateExpert({
+        display_name: expertForm.display_name.trim(),
+        headline: expertForm.headline.trim() || undefined,
+        bio: expertForm.bio.trim() || undefined,
+      });
+      setExpertForm({ display_name: "", headline: "", bio: "" });
+      setExpertMsg(t.expertAdded);
       await loadTab("experts");
       if (stats) setStats(await safeLoad(() => api.adminStats(), stats));
     } catch (err) {
@@ -695,11 +732,11 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
           </section>
         )}
         {tab === "experts" && (
-          <section className="mt-8">
-            {experts.length === 0 ? (
-              <p className="text-sm text-ink-500">{t.emptyList}</p>
-            ) : (
-              <div className="overflow-x-auto rounded-xl border border-line bg-paper-50">
+          <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
+            <div className={experts.length === 0 ? "" : "overflow-x-auto rounded-xl border border-line bg-paper-50"}>
+              {experts.length === 0 ? (
+                <p className="rounded-xl border border-line bg-paper-50 p-6 text-sm text-ink-500">{t.emptyList}</p>
+              ) : (
                 <table className="w-full min-w-[640px] text-sm">
                   <thead>
                     <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-500">
@@ -737,8 +774,48 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void saveExpert();
+              }}
+              className="h-fit rounded-xl border border-line bg-paper-50 p-5"
+            >
+              <h2 className="font-display text-base font-semibold text-ink-950">{t.addExpert}</h2>
+              {expertMsg && <p className="mt-2 text-sm font-medium text-emerald-700">{expertMsg}</p>}
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.expertName}</span>
+                <input
+                  value={expertForm.display_name}
+                  onChange={(e) => setExpertForm({ ...expertForm, display_name: e.target.value })}
+                  className={inputCls}
+                  required
+                />
+              </label>
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.expertHeadline}</span>
+                <input
+                  value={expertForm.headline}
+                  onChange={(e) => setExpertForm({ ...expertForm, headline: e.target.value })}
+                  className={inputCls}
+                />
+              </label>
+              <label className="mt-3 block">
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.expertBio}</span>
+                <textarea
+                  rows={3}
+                  value={expertForm.bio}
+                  onChange={(e) => setExpertForm({ ...expertForm, bio: e.target.value })}
+                  className={`${inputCls} h-auto py-2`}
+                />
+              </label>
+              <div className="mt-4">
+                <Button variant="primary" type="submit">{t.addExpert}</Button>
               </div>
-            )}
+            </form>
           </section>
         )}
 

@@ -48,7 +48,18 @@ const dictionaryLoaders: Record<Locale, () => Promise<Dictionary>> = {
   }),
 };
 
-export async function getDictionary(locale: Locale): Promise<Dictionary> {
-  const loader = dictionaryLoaders[locale] ?? dictionaryLoaders[defaultLocale];
-  return loader();
+// The dictionary is static at runtime; memoize it so the layout and page
+// (and any server component descendants) share a single built object per
+// process instead of rebuilding it on every render.
+const dictionaryCache = new Map<Locale, Promise<Dictionary>>();
+
+export function getDictionary(locale: Locale): Promise<Dictionary> {
+  const key: Locale = locale in dictionaryLoaders ? locale : defaultLocale;
+  let entry = dictionaryCache.get(key);
+  if (!entry) {
+    const loader = dictionaryLoaders[key];
+    entry = loader().then((dict) => dict);
+    dictionaryCache.set(key, entry);
+  }
+  return entry;
 }

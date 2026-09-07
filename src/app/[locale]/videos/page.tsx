@@ -14,6 +14,7 @@ const COPY = {
     loadError: "Could not load videos. Is the API running?",
     minWatch: "Min. watch",
     reward: "Reward",
+    expert: "By",
   },
   ar: {
     heading: "فيديوهات طويلة",
@@ -24,6 +25,7 @@ const COPY = {
     loadError: "تعذّر تحميل الفيديوهات. هل الخدمة تعمل؟",
     minWatch: "أقل مشاهدة",
     reward: "المكافأة",
+    expert: "بواسطة",
   },
 };
 
@@ -127,6 +129,11 @@ function VideoCard({ v, locale, t }: { v: VideoPublic; locale: string; t: CopyT 
       />
       <div className="p-4">
         <p className="truncate font-medium text-ink-950 group-hover:text-brass-600">{v.title}</p>
+        {v.owner_name && (
+          <p className="mt-1 text-xs font-medium text-brass-600">
+            {t.expert} {v.owner_name}
+          </p>
+        )}
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
           <span className="capitalize">{v.difficulty}</span>
           <span>·</span>

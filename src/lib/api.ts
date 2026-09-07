@@ -30,7 +30,7 @@ export class ApiError extends Error {
   }
 }
 
-async function rawRequest<T>(path: string, options: RequestInit): Promise<T> {
+async function rawRequest<T>(path: string, options: RequestInit, revalidate?: number): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> | undefined),
@@ -38,13 +38,18 @@ async function rawRequest<T>(path: string, options: RequestInit): Promise<T> {
   const token = getAccessToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-    // Server components cache fetch() by default in Next 14; our data is
-    // per-user and time-sensitive, so opt out of the data cache entirely.
-    cache: "no-store",
-  });
+  const fetchOptions: RequestInit = { ...options, headers };
+  if (revalidate) {
+    // Public/catalog data: let Next's server-side fetch cache it briefly to
+    // avoid hitting the API + DB on every SSR. Client-side fetches ignore
+    // this option, so browser requests still get fresh data.
+    (fetchOptions as RequestInit & { next?: { revalidate?: number } }).next = { revalidate };
+  } else {
+    // User-specific / time-sensitive data: always fresh.
+    fetchOptions.cache = "no-store";
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, fetchOptions);
   let body: unknown = null;
   try {
     body = await response.json();
@@ -84,13 +89,13 @@ async function tryRefresh(): Promise<boolean> {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, revalidate?: number): Promise<T> {
   try {
-    return await rawRequest<T>(path, options);
+    return await rawRequest<T>(path, options, revalidate);
   } catch (err) {
     if (err instanceof ApiError && err.status === 401 && !path.startsWith("/auth/")) {
       const refreshed = await tryRefresh();
-      if (refreshed) return await rawRequest<T>(path, options);
+      if (refreshed) return await rawRequest<T>(path, options, revalidate);
     }
     throw err;
   }
@@ -131,6 +136,7 @@ export type VideoPublic = {
   documentary: boolean;
   effective_reward: string;
   required_watch_percentage: string;
+  owner_name: string | null;
 };
 
 export type CoursePublic = {
@@ -143,6 +149,7 @@ export type CoursePublic = {
   difficulty: string;
   video_count: number;
   total_duration: number;
+  owner_name: string | null;
 };
 
 export type PageOf<T> = {
@@ -341,18 +348,18 @@ export const api = {
     page?: number;
     page_size?: number;
     exclude_in_course?: boolean;
-  }) => request<PageOf<VideoPublic>>(`/content/videos?${qs({ ...params, exclude_in_course: params.exclude_in_course ? "true" : undefined, documentary: params.documentary === undefined ? undefined : (params.documentary ? "true" : "false") })}`),
-  getVideo: (id: string) => request<VideoPublic>(`/content/videos/${id}`),
-  listCategories: () => request<{ id: string; name: string; slug: string }[]>("/content/categories"),
+  }) => request<PageOf<VideoPublic>>(`/content/videos?${qs({ ...params, exclude_in_course: params.exclude_in_course ? "true" : undefined, documentary: params.documentary === undefined ? undefined : (params.documentary ? "true" : "false") })}`, {}, 60),
+  getVideo: (id: string) => request<VideoPublic>(`/content/videos/${id}`, {}, 60),
+  listCategories: () => request<{ id: string; name: string; slug: string }[]>("/content/categories", {}, 60),
   listCourses: (params: {
     q?: string;
     difficulty?: string;
     sort?: string;
     page?: number;
     page_size?: number;
-  } = {  }) => request<PageOf<CoursePublic>>(`/content/courses?${qs(params)}`),
+  } = {  }) => request<PageOf<CoursePublic>>(`/content/courses?${qs(params)}`, {}, 60),
 
-  listPartners: () => request<Partner[]>("/content/partners"),
+  listPartners: () => request<Partner[]>("/content/partners", {}, 60),
 
   heartbeat: (data: {
     video_id: string;
@@ -371,7 +378,7 @@ export const api = {
   myClaims: () => request<ClaimRow[]>("/users/me/rewards/claims"),
   claimRewards: () => request<ClaimRequestResult>("/users/me/rewards/claims", { method: "POST" }),
 
-  leaderboard: (limit = 50) => request<LeaderboardOut>(`/leaderboard?limit=${limit}`),
+  leaderboard: (limit = 50) => request<LeaderboardOut>(`/leaderboard?limit=${limit}`, {}, 60),
   myLeaderboardStanding: () => request<LeaderboardMeOut>("/leaderboard/me"),
 
   applyExpert: (data: {
@@ -446,6 +453,12 @@ export const api = {
     }),
   adminExperts: (status?: string) =>
     request<AdminExpertRow[]>(`/admin/experts?${qs({ status_filter: status })}`),
+  adminCreateExpert: (data: {
+    display_name: string;
+    headline?: string;
+    bio?: string;
+    links?: string[];
+  }) => request<AdminExpertRow>("/admin/experts", { method: "POST", body: JSON.stringify(data) }),
   adminReviewExpert: (id: string, status: string, note?: string) =>
     request<AdminExpertRow>(`/admin/experts/${id}/review`, {
       method: "PATCH",

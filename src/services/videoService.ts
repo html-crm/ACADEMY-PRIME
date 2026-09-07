@@ -60,6 +60,7 @@ export interface CourseItem {
   difficulty: string;
   videoCount: number;
   totalDuration: number;
+  ownerName: string | null;
 }
 
 async function withFallback(
@@ -89,6 +90,7 @@ export const videoService = {
           difficulty: c.difficulty,
           videoCount: c.video_count,
           totalDuration: c.total_duration,
+          ownerName: c.owner_name,
         })),
         total: page.total,
       };
