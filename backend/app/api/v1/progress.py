@@ -60,9 +60,22 @@ def heartbeat(data: HeartbeatIn, user: CurrentUser, db: DbSession) -> HeartbeatO
     video = db.get(Video, data.video_id)
     if video is None or video.status != ContentStatus.PUBLISHED:
         raise HTTPException(
-            status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "video_not_found", "message": "Video not available."},
         )
+    if video.is_paid and video.price_amount is not None and video.price_amount > 0:
+        from app.models.purchase import VideoPurchase
+
+        purchased = db.scalar(
+            select(VideoPurchase.id).where(
+                VideoPurchase.user_id == user.id, VideoPurchase.video_id == video.id
+            )
+        )
+        if purchased is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": "video_locked", "message": "This lesson is paid. Purchase it to continue."},
+            )
     if not video.duration_seconds or video.duration_seconds <= 0:
         raise HTTPException(
             status.HTTP_409_CONFLICT,

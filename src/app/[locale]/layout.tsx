@@ -6,6 +6,7 @@ import { Locale } from "@/types/user";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { SessionProvider } from "@/components/session/SessionProvider";
+import { RefreshWatcher } from "@/components/layout/RefreshWatcher";
 import "@/app/globals.css";
 
 const inter = Inter({
@@ -46,6 +47,10 @@ export const metadata: Metadata = {
     "تعلم واربح",
   ],
   applicationName: "ACADEMY PRIME",
+  icons: {
+    icon: [{ url: "/icon.png", type: "image/png", sizes: "180x180" }],
+    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
+  },
   alternates: {
     canonical: "/",
     languages: {
@@ -123,6 +128,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
           dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteLd) }}
         />
         <SessionProvider>
+          <RefreshWatcher />
           <Navbar locale={locale} dict={dict} />
           <main>{children}</main>
           <Footer locale={locale} dict={dict} />

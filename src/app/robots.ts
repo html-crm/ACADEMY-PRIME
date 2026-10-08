@@ -1,15 +1,14 @@
 import type { MetadataRoute } from "next";
 
-const BASE_URL = "https://www.academy-prime.site";
-
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
+        disallow: ["/admin", "/dashboard", "/login", "/register", "/watch"],
       },
     ],
-    sitemap: `${BASE_URL}/sitemap.xml`,
+    sitemap: "https://www.academy-prime.site/sitemap.xml",
   };
 }

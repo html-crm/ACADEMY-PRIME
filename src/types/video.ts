@@ -26,6 +26,7 @@ export interface CatalogVideo {
   isShort: boolean;
   reward: number;
   requiredWatchPercentage: number;
+  ownerName: string | null;
 }
 
 export const SHORT_VIDEO_MAX_SECONDS = 60;

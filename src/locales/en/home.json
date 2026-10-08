@@ -35,6 +35,34 @@
       }
     ]
   },
+  "categoryNav": {
+    "eyebrow": "Explore the academy",
+    "title": "Pick a path and start learning",
+    "subtitle": "Five curated tracks across the Academy Prime campus — from your first steps in crypto to advanced product know-how.",
+    "viewAll": "View all courses",
+    "items": [
+      {
+        "title": "Crypto Security",
+        "description": "Stay safe: spot scams, guard your keys, and store assets the right way."
+      },
+      {
+        "title": "Courses",
+        "description": "Structured lessons on blockchain, DeFi, trading, and Web3 fundamentals."
+      },
+      {
+        "title": "Learn & Earn",
+        "description": "Complete verified lessons and earn ACAD-P rewards for your progress."
+      },
+      {
+        "title": "Prime Product Guides",
+        "description": "Practical walk-throughs of Academy Prime products and on-chain tools."
+      },
+      {
+        "title": "Learn BTC",
+        "description": "Master Bitcoin, from white-paper basics to self-custody confidence."
+      }
+    ]
+  },
   "featuredCourses": {
     "eyebrow": "Featured courses",
     "heading": "Start where it matters",

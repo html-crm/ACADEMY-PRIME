@@ -24,6 +24,7 @@ function mockShort(
     isShort: true,
     reward: 5,
     requiredWatchPercentage: 90,
+    ownerName: null,
   };
 }
 

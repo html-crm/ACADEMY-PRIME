@@ -23,6 +23,7 @@ export function LibraryBrowser({
   const [docs, setDocs] = useState<VideoPublic[] | null>(null);
   const [regular, setRegular] = useState<VideoPublic[] | null>(null);
   const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
   const rtl = locale === "ar";
   const t = COPY[locale === "ar" ? "ar" : "en"];
 
@@ -41,7 +42,7 @@ export function LibraryBrowser({
         setDocs([]);
         setRegular([]);
       });
-  }, [t.loadError]);
+  }, [t.loadError, attempt]);
 
   const loading = docs === null || regular === null;
   const docsLoaded = docs !== null && docs.length > 0;
@@ -79,8 +80,19 @@ export function LibraryBrowser({
       ) : (
         <div className="container-content pt-8">
           {error && (
-            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error}
+            <div className="mb-6 flex items-center justify-between gap-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              <span>{error}</span>
+              <button
+                onClick={() => {
+                  setError("");
+                  setDocs(null);
+                  setRegular(null);
+                  setAttempt((a) => a + 1);
+                }}
+                className="shrink-0 rounded-full bg-red-100 px-4 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-200"
+              >
+                {t.retry}
+              </button>
             </div>
           )}
 
@@ -135,6 +147,7 @@ const COPY = {
     docsEmpty: "No documentaries published yet. Check back soon!",
     empty: "No lessons published yet. Check back soon!",
     loadError: "Could not load videos. Is the API running?",
+    retry: "Retry",
     minWatch: "Min. watch",
     reward: "Reward",
   },
@@ -144,6 +157,7 @@ const COPY = {
     docsEmpty: "لا توجد أفلام وثائقية منشورة بعد. عود قريباً!",
     empty: "لا توجد دروس منشورة بعد. عود قريباً!",
     loadError: "تعذّر تحميل الفيديوهات. هل الخدمة تعمل؟",
+    retry: "إعادة المحاولة",
     minWatch: "أقل مشاهدة",
     reward: "المكافأة",
   },

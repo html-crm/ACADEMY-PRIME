@@ -1,5 +1,19 @@
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+// The browser always calls the same-origin "/api/v1" path, which Next.js
+// rewrites to the real API (see next.config.mjs). Hardcoding it here avoids a
+// broken NEXT_PUBLIC_API_URL value being baked into the client bundle.
+export const API_BASE = "/api/v1";
+
+// The browser calls same-origin "/api/v1" (Next rewrites it to FastAPI, no
+// CORS). Node's fetch on the server (SSR) rejects relative URLs, so resolve
+// them against the in-container backend that the dev/prod proxy targets.
+function resolveApiUrl(suffix: string): string {
+  if (API_BASE.startsWith("http")) return `${API_BASE}${suffix}`;
+  if (typeof window === "undefined") {
+    const target = process.env.API_PROXY_TARGET ?? "http://127.0.0.1:8000";
+    return `${target}${API_BASE}${suffix}`;
+  }
+  return `${API_BASE}${suffix}`;
+}
 
 const ACCESS_KEY = "ap_access_token";
 const REFRESH_KEY = "ap_refresh_token";
@@ -30,6 +44,39 @@ export class ApiError extends Error {
   }
 }
 
+const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
+const FETCH_TIMEOUT_MS = 25000;
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Serverless backends occasionally cold-start slowly (a few seconds) and
+// return a transient 504/timeout on the very first hits. For idempotent
+// requests, wait briefly and retry instead of failing the whole page.
+async function fetchWithRetry(url: string, options: RequestInit): Promise<Response> {
+  const method = (options.method ?? "GET").toUpperCase();
+  const retries = method === "GET" || method === "HEAD" ? 2 : 0;
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      if (attempt < retries && RETRYABLE_STATUS.has(response.status)) {
+        await delay(400 * (attempt + 1));
+        continue;
+      }
+      return response;
+    } catch (err) {
+      lastError = err;
+      if (attempt >= retries) throw lastError;
+      await delay(400 * (attempt + 1));
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw lastError;
+}
+
 async function rawRequest<T>(path: string, options: RequestInit, revalidate?: number): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -49,7 +96,7 @@ async function rawRequest<T>(path: string, options: RequestInit, revalidate?: nu
     fetchOptions.cache = "no-store";
   }
 
-  const response = await fetch(`${API_BASE}${path}`, fetchOptions);
+  const response = await fetchWithRetry(resolveApiUrl(path), fetchOptions);
   let body: unknown = null;
   try {
     body = await response.json();
@@ -269,6 +316,7 @@ export type SubmittedVideo = {
   language: string;
   tags: string[];
   status: string;
+  category_id: string | null;
 };
 
 export type RewardLedgerEntry = {
@@ -344,6 +392,7 @@ export const api = {
     language?: string;
     format?: string;
     documentary?: boolean;
+    category_id?: string;
     sort?: string;
     page?: number;
     page_size?: number;
@@ -399,6 +448,7 @@ export const api = {
     language?: string;
     tags?: string[];
     course_id?: string;
+    category_id?: string;
   }) => request<SubmittedVideo>("/experts/videos", { method: "POST", body: JSON.stringify(data) }),
   mySubmittedVideos: () => request<SubmittedVideo[]>("/experts/me/videos"),
   updateSubmittedVideo: (
@@ -413,6 +463,7 @@ export const api = {
       documentary?: boolean;
       language: string;
       tags: string[];
+      category_id: string;
     }>,
   ) => request<SubmittedVideo>(`/experts/videos/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteSubmittedVideo: (id: string) =>
@@ -510,6 +561,7 @@ export const api = {
     language?: string;
     tags?: string[];
     course_id?: string;
+    category_ids?: string[];
     reward_amount?: string;
   }) => request<{ id: string; title: string; status: string }>("/admin/videos", {
     method: "POST",

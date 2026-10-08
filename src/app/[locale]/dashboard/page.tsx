@@ -11,7 +11,9 @@ const COPY = {
     heading: "My Dashboard",
     subhead: "Your learning progress, rewards and wallet in one place.",
     hi: "Welcome back",
-    balance: "Available balance",
+    balance: "ACAD-P balance",
+    balanceNote:
+      "Your ACAD-P balance is held on-platform as credits. Real on-chain token distribution will open at a later stage — no external wallet is needed to hold them.",
     pendingRewards: "Pending rewards",
     claimedTotal: "Total claimed",
     lessonsDone: "Lessons completed",
@@ -22,11 +24,7 @@ const COPY = {
     browseCourses: "Explore courses",
     resume: "Resume",
     done: "Completed",
-    walletTitle: "Solana wallet",
-    walletNone: "No wallet linked yet. Link one to claim rewards on-chain.",
-    walletPlaceholder: "Paste your Solana address",
-    linkWallet: "Link wallet",
-    walletLinked: "Wallet linked!",
+    walletTitle: "My Academy Prime wallet",
     rewardsTitle: "Recent rewards",
     rewardEmpty: "Watch a lesson to earn your first reward.",
     colType: "Type",
@@ -36,9 +34,6 @@ const COPY = {
     needLogin: "Log in to see your dashboard.",
     goLogin: "Log in",
     loadError: "Could not load your data. Is the API running?",
-    claim: "Claim all rewards",
-    claiming: "Claiming…",
-    claimOk: "Claim request submitted!",
     studioTitle: "Creator? Share what you know.",
     studioSub: "Post lessons and shorts from your studio.",
     studioBtn: "Open Studio",
@@ -47,7 +42,9 @@ const COPY = {
     heading: "لوحتي",
     subhead: "تعلّمك ومكافآتك ومحفظتك في مكان واحد.",
     hi: "مرحباً بعودتك",
-    balance: "الرصيد المتاح",
+    balance: "رصيد ACAD-P",
+    balanceNote:
+      "رصيد ACAD-P الخاص بك محفوظ على المنصة كأرصدة. توزيع الرموز الحقيقي سيُفتح في مرحلة لاحقة — لا حاجة لمحفظة خارجية للاحتفاظ بها.",
     pendingRewards: "مكافآت معلّقة",
     claimedTotal: "إجمالي المصروف",
     lessonsDone: "دروس مكتملة",
@@ -58,11 +55,7 @@ const COPY = {
     browseCourses: "استكشف الدورات",
     resume: "متابعة",
     done: "مكتمل",
-    walletTitle: "محفظة سولانا",
-    walletNone: "لا توجد محفظة مرتبطة. اربط واحدة لصرف المكافآت.",
-    walletPlaceholder: "الصق عنوان محفظتك",
-    linkWallet: "ربط المحفظة",
-    walletLinked: "تم ربط المحفظة!",
+    walletTitle: "محفظة أكاديمية برايم",
     rewardsTitle: "أحدث المكافآت",
     rewardEmpty: "شاهد درساً لتحصل على أول مكافأة.",
     colType: "النوع",
@@ -72,9 +65,6 @@ const COPY = {
     needLogin: "سجّل الدخول لعرض لوحتك.",
     goLogin: "تسجيل الدخول",
     loadError: "تعذّر تحميل بياناتك. هل الخدمة تعمل؟",
-    claim: "صرف كل المكافآت",
-    claiming: "جارٍ الصرف…",
-    claimOk: "تم إرسال طلب الصرف!",
     studioTitle: "صاحب محتوى؟ شارك ما تعرفه.",
     studioSub: "انشر الدروس والمقاطع من استوديوك.",
     studioBtn: "افتح الاستوديو",
@@ -82,7 +72,6 @@ const COPY = {
 };
 
 const num = (v: string) => Number(v).toLocaleString("en-US");
-const shortAddr = (a: string) => `${a.slice(0, 4)}…${a.slice(-4)}`;
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -103,9 +92,6 @@ export default function DashboardPage({ params }: { params: { locale: string } }
   const [progress, setProgress] = useState<ProgressRow[]>([]);
   const [rewards, setRewards] = useState<RewardLedgerEntry[]>([]);
   const [error, setError] = useState("");
-  const [walletInput, setWalletInput] = useState("");
-  const [walletMsg, setWalletMsg] = useState("");
-  const [claimState, setClaimState] = useState<"idle" | "busy" | "ok">("idle");
 
   const loadAll = useCallback(async () => {
     try {
@@ -145,31 +131,6 @@ export default function DashboardPage({ params }: { params: { locale: string } }
   const inProgress = progress.filter((p) => !p.completed).slice(0, 6);
   const completedCount = progress.filter((p) => p.completed).length;
 
-  async function submitWallet() {
-    const addr = walletInput.trim();
-    if (!addr) return;
-    try {
-      await api.linkWallet(addr);
-      setWalletMsg(t.walletLinked);
-      setWalletInput("");
-      await loadAll();
-    } catch (err) {
-      setWalletMsg(err instanceof ApiError ? err.message : "Error");
-    }
-  }
-
-  async function claim() {
-    setClaimState("busy");
-    try {
-      await api.claimRewards();
-      setClaimState("ok");
-      await loadAll();
-    } catch (err) {
-      setClaimState("idle");
-      setWalletMsg(err instanceof ApiError ? err.message : "Error");
-    }
-  }
-
   return (
     <main className="min-h-screen bg-paper-100 pb-20" dir={rtl ? "rtl" : "ltr"}>
       <div className="container-content pt-12">
@@ -206,31 +167,12 @@ export default function DashboardPage({ params }: { params: { locale: string } }
             </section>
 
             <section className="mt-8 rounded-xl border border-line bg-paper-50 p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="font-display text-lg font-semibold text-ink-950">{t.walletTitle}</h2>
-                {Number(summary.available) > 0 && (
-                  <Button variant="primary" onClick={claim} disabled={claimState === "busy"}>
-                    {claimState === "busy" ? t.claiming : claimState === "ok" ? t.claimOk : t.claim}
-                  </Button>
-                )}
+              <h2 className="font-display text-lg font-semibold text-ink-950">{t.walletTitle}</h2>
+              <div className="mt-3 flex items-end gap-2">
+                <p className="font-display text-4xl font-bold text-ink-950">{num(summary.available)}</p>
+                <span className="pb-1 text-sm font-bold text-brass-600">ACAD-P</span>
               </div>
-              {summary.wallet_address ? (
-                <p className="mt-2 font-mono text-sm text-ink-700">{shortAddr(summary.wallet_address)}</p>
-              ) : (
-                <>
-                  <p className="mt-1 text-sm text-ink-500">{t.walletNone}</p>
-                  <div className="mt-3 flex max-w-md gap-2">
-                    <input
-                      value={walletInput}
-                      onChange={(e) => setWalletInput(e.target.value)}
-                      placeholder={t.walletPlaceholder}
-                      className="h-11 w-full rounded-lg border border-line bg-paper-50 px-4 font-mono text-sm outline-none focus:border-brass-400"
-                    />
-                    <Button variant="secondary" onClick={submitWallet}>{t.linkWallet}</Button>
-                  </div>
-                  {walletMsg && <p className="mt-2 text-xs text-brass-600">{walletMsg}</p>}
-                </>
-              )}
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-500">{t.balanceNote}</p>
             </section>
 
             <section className="mt-8">

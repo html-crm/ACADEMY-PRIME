@@ -11,6 +11,13 @@ class RegisterIn(BaseModel):
     username: str = Field(min_length=3, max_length=32, pattern=r"^[a-zA-Z0-9_]+$")
     password: str = Field(min_length=8, max_length=128)
     locale: str = Field(default="en", pattern=r"^[a-z]{2}(-[A-Za-z]{2})?$")
+    captcha_token: str = ""
+    captcha_answer: str = Field(default="", max_length=16)
+
+
+class CaptchaOut(BaseModel):
+    token: str
+    question: str
 
 
 class LoginIn(BaseModel):
@@ -40,6 +47,7 @@ class MeOut(BaseModel):
     email: str
     username: str
     role: UserRole
+    is_vip: bool = False
     status: AccountStatus
     locale: str
     country_code: str | None = None

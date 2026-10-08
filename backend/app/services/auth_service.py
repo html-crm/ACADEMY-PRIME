@@ -1,3 +1,4 @@
+import random
 from datetime import datetime, timedelta, timezone
 from jwt import PyJWTError
 from fastapi import HTTPException, status
@@ -128,3 +129,43 @@ def change_password(db: Session, user: User, current_password: str, new_password
         raise AuthError("invalid_password", "Current password is incorrect.")
     user.password_hash = hash_password(new_password)
     db.commit()
+
+
+def create_captcha() -> tuple[str, str]:
+    import jwt as pyjwt
+
+    from app.core.config import get_settings
+
+    a = random.randint(2, 9)
+    b = random.randint(2, 9)
+    answer = str(a + b)
+    now = datetime.now(timezone.utc)
+    token = pyjwt.encode(
+        {
+            "type": "captcha",
+            "q": f"{a} + {b} = ?",
+            "a": answer,
+            "iat": int(now.timestamp()),
+            "exp": int((now + timedelta(minutes=10)).timestamp()),
+        },
+        get_settings().SECRET_KEY,
+        algorithm="HS256",
+    )
+    return token, f"{a} + {b} = ?"
+
+
+def verify_captcha(db: Session, token: str, answer: str, *_args, **_kwargs) -> None:
+    import jwt as pyjwt
+
+    from app.core.config import get_settings
+
+    if not token or not answer:
+        raise AuthError("captcha_required", "Please complete the human verification.", 422)
+    try:
+        payload = pyjwt.decode(token, get_settings().SECRET_KEY, algorithms=["HS256"])
+    except Exception as exc:
+        raise AuthError("captcha_invalid", "Human verification expired. Please try again.", 422) from exc
+    if payload.get("type") != "captcha":
+        raise AuthError("captcha_invalid", "Invalid human verification.", 422)
+    if str(payload.get("a")) != str(answer).strip():
+        raise AuthError("captcha_wrong", "Incorrect answer to the human verification question.", 422)

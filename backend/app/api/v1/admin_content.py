@@ -213,6 +213,7 @@ class AdminVideoIn(BaseModel):
     documentary: bool = False
     tags: list[str] = Field(default_factory=list, max_length=20)
     course_id: UUID | None = None
+    category_ids: list[UUID] = Field(default_factory=list, max_length=10)
     reward_amount: Decimal | None = Field(default=None, ge=0, le=Decimal("1000000"))
 
 
@@ -266,6 +267,17 @@ def admin_create_video(
     )
     db.add(video)
     db.flush()
+
+    if data.category_ids:
+        categories = db.scalars(
+            select(Category).where(Category.id.in_(sorted(set(data.category_ids))))
+        ).all()
+        if len(categories) != len(set(data.category_ids)):
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND,
+                detail={"code": "category_not_found", "message": "One or more categories were not found."},
+            )
+        video.categories = categories
 
     if data.course_id is not None:
         max_pos = db.scalar(

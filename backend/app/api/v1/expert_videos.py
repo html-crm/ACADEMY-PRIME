@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
 from app.core.deps import CurrentUser, DbSession
-from app.models.content import Video, Course, course_videos
+from app.models.content import Category, Video, Course, course_videos
 from app.models.enums import (
     ContentStatus,
     Difficulty,
@@ -39,6 +39,7 @@ class VideoSubmitIn(BaseModel):
     tags: list[str] = Field(default_factory=list, max_length=20)
     learning_objectives: list[str] = Field(default_factory=list, max_length=20)
     course_id: UUID | None = None
+    category_id: UUID | None = None
     as_draft: bool = False
 
 
@@ -58,6 +59,7 @@ class VideoSubmitOut(BaseModel):
     documentary: bool
     language: str
     tags: list[str]
+    category_id: str | None = None
 
 
 def _admin_expert(user: CurrentUser, db: DbSession) -> Expert:
@@ -121,6 +123,16 @@ def _validate_duration(format_: VideoFormat, duration_seconds: int) -> None:
         )
 
 
+def _get_category(db: DbSession, category_id: UUID) -> Category:
+    category = db.get(Category, category_id)
+    if category is None or not category.is_active:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            detail={"code": "category_not_found", "message": "Category not found."},
+        )
+    return category
+
+
 @router.post("/videos", response_model=VideoSubmitOut, status_code=status.HTTP_201_CREATED)
 def submit_video(data: VideoSubmitIn, request: Request, user: CurrentUser, db: DbSession) -> VideoSubmitOut:
     expert = _require_approved_expert(user, db)
@@ -144,6 +156,11 @@ def submit_video(data: VideoSubmitIn, request: Request, user: CurrentUser, db: D
                 detail={"code": "course_not_found", "message": "Course not found."},
             )
 
+    if data.category_id is not None:
+        category = _get_category(db, data.category_id)
+    else:
+        category = None
+
     video = Video(
         expert_id=expert.id,
         title=data.title.strip(),
@@ -164,6 +181,9 @@ def submit_video(data: VideoSubmitIn, request: Request, user: CurrentUser, db: D
     )
     db.add(video)
     db.flush()
+
+    if category is not None:
+        video.categories.append(category)
 
     if data.course_id is not None:
         max_pos = db.scalar(
@@ -202,6 +222,8 @@ class VideoUpdateIn(BaseModel):
     documentary: bool | None = None
     language: str | None = Field(default=None, min_length=2, max_length=5)
     tags: list[str] | None = Field(default=None, max_length=20)
+    category_id: UUID | None = None
+    category_id: UUID | None = None
 
 
 class ExpertEarningsOut(BaseModel):
@@ -228,8 +250,9 @@ def _video_out(v: Video) -> VideoSubmitOut:
         difficulty=v.difficulty.value,
         format=v.format.value,
         documentary=v.documentary,
-        language=v.language,
+language=v.language,
         tags=v.tags or [],
+        category_id=str(v.categories[0].id) if v.categories else None,
     )
 
 
@@ -274,6 +297,16 @@ def update_video(
         video.language = data.language
     if data.tags is not None:
         video.tags = data.tags
+    if data.category_id is not None:
+        category = db.get(Category, data.category_id)
+        if category is None or not category.is_active:
+            raise HTTPException(
+                status.HTTP_404_NOT_FOUND,
+                detail={"code": "category_not_found", "message": "Category not found."},
+            )
+        video.categories = [category]
+    if data.category_id is not None:
+        video.categories = [_get_category(db, data.category_id)]
 
     # Any content edit sends the post back through admin review,
     # except drafts which keep their draft state.

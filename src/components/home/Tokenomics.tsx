@@ -25,7 +25,7 @@ const SLICES: Array<{ pct: number; color: string; en: string; ar: string; solsca
   { pct: 20, color: "#1F2933", en: "Old Token Distribution", ar: "توزيع العملة القديمة", solscan: "https://solscan.io/account/6XTiJVSFzPEuuJ8B3qFbJ2cfxgGHmvJCfyexgTYmHAFz" },
   { pct: 20, color: "#2F80ED", en: "Pool", ar: "المجمع" },
   { pct: 10, color: "#27AE60", en: "Marketing", ar: "التسويق" },
-  { pct: 10, color: "#9B51E0", en: "Treasury", ar: "الخزينة", solscan: "https://solscan.io/account/8f4nELPoMo8yozfYo9RM3vmzDaTEsSBuqmnNv4wmyXVk" },
+  { pct: 10, color: "#9B51E0", en: "Treasury", ar: "الخزينة" },
   { pct: 10, color: "#EB5757", en: "Team", ar: "الفريق" },
 ];
 

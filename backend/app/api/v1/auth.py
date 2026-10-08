@@ -3,10 +3,24 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from app.core.deps import CurrentUser, DbSession
 from app.core.rate_limit import rate_limit_auth
 from app.models.enums import AccountStatus
-from app.schemas.auth import ChangePasswordIn, LoginIn, MeOut, RefreshIn, RegisterIn, TokenPair
+from app.schemas.auth import (
+    CaptchaOut,
+    ChangePasswordIn,
+    LoginIn,
+    MeOut,
+    RefreshIn,
+    RegisterIn,
+    TokenPair,
+)
 from app.services import audit_service, auth_service, notification_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.get("/captcha", response_model=CaptchaOut)
+def get_captcha(_rl: None = Depends(rate_limit_auth)) -> CaptchaOut:
+    token, question = auth_service.create_captcha()
+    return CaptchaOut(token=token, question=question)
 
 
 @router.post("/register", response_model=TokenPair, status_code=status.HTTP_201_CREATED)
@@ -16,6 +30,8 @@ def register(
     db: DbSession,
     _rl: None = Depends(rate_limit_auth),
 ) -> TokenPair:
+    if data.captcha_token and data.captcha_answer:
+        auth_service.verify_captcha(db, data.captcha_token, data.captcha_answer)
     user = auth_service.register_user(db, data.email, data.username, data.password, data.locale)
     notification_service.notify(db, user.id, "notification.account.created")
     audit_service.log(db, "auth.register", actor=user, entity_type="user", entity_id=str(user.id), request=request)

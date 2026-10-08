@@ -1,4 +1,4 @@
-import { api, ApiError, type VideoPublic, type CoursePublic } from "@/lib/api";
+import { api, type VideoPublic, type CoursePublic } from "@/lib/api";
 import {
   CatalogVideo,
   DifficultyLevel,
@@ -35,6 +35,7 @@ function toCatalogVideo(video: VideoPublic): CatalogVideo {
     isShort: video.format === "short",
     reward: Number(video.effective_reward),
     requiredWatchPercentage: Number(video.required_watch_percentage),
+    ownerName: video.owner_name ?? null,
   };
 }
 
@@ -43,6 +44,7 @@ export interface CatalogQuery {
   difficulty?: string;
   language?: string;
   sort?: string;
+  categoryId?: string;
 }
 
 export interface CatalogPage {
@@ -63,16 +65,8 @@ export interface CourseItem {
   ownerName: string | null;
 }
 
-async function withFallback(
-  real: () => Promise<CatalogPage>,
-  fallbackItems: CatalogVideo[],
-): Promise<CatalogPage> {
-  try {
-    return await real();
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    return { items: fallbackItems, total: fallbackItems.length };
-  }
+async function callService(real: () => Promise<CatalogPage>): Promise<CatalogPage> {
+  return await real();
 }
 
 export const videoService = {
@@ -100,32 +94,33 @@ export const videoService = {
   },
 
   async listShorts(query: CatalogQuery = {}): Promise<CatalogPage> {
-    return withFallback(
+    return callService(
       async () => {
         const page = await api.listVideos({ ...query, format: "short" });
         return { items: page.items.map(toCatalogVideo), total: page.total };
       },
-      [],
     );
   },
 
   async listCoursesVideos(query: CatalogQuery = {}): Promise<CatalogPage> {
-    return withFallback(
+    return callService(
       async () => {
-        const page = await api.listVideos({ ...query, format: "course" });
+        const page = await api.listVideos({
+          ...query,
+          category_id: query.categoryId,
+          format: "course",
+        });
         return { items: page.items.map(toCatalogVideo), total: page.total };
       },
-      [],
     );
   },
 
   async listLongVideos(query: CatalogQuery = {}): Promise<CatalogPage> {
-    return withFallback(
+    return callService(
       async () => {
         const page = await api.listVideos({ ...query, format: "long", exclude_in_course: true });
         return { items: page.items.map(toCatalogVideo), total: page.total };
       },
-      [],
     );
   },
 

@@ -60,6 +60,8 @@ const COPY = {
     shortTooLong: "Shorts must be 60 seconds or less.",
     courseSelector: "Assign to course (optional)",
     noCourse: "No course (standalone)",
+    category: "Category",
+    noCategory: "No category (optional)",
   },
   ar: {
     heading: "استوديو الخبير",
@@ -113,6 +115,8 @@ const COPY = {
     shortTooLong: "الحد الأقصى للمقطع القصير ٦٠ ثانية.",
     courseSelector: "إضافة إلى دورة (اختياري)",
     noCourse: "بدون دورة (مستقل)",
+    category: "التصنيف",
+    noCategory: "بدون تصنيف (اختياري)",
   },
 };
 
@@ -146,6 +150,7 @@ interface FormState {
   documentary: boolean;
   language: string;
   course_id: string;
+  category_id: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -159,6 +164,7 @@ const EMPTY_FORM: FormState = {
   documentary: false,
   language: "en",
   course_id: "",
+  category_id: "",
 };
 
 export default function ExpertStudioPage({ params }: { params: { locale: string } }) {
@@ -171,6 +177,7 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
   const [videos, setVideos] = useState<SubmittedVideo[]>([]);
   const [earnings, setEarnings] = useState<Earnings | null>(null);
   const [courses, setCourses] = useState<CoursePublic[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -188,14 +195,16 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
       const p = await api.myExpertProfile();
       setProfile(p);
       if (p.status === "approved") {
-        const [v, e, c] = await Promise.all([
+        const [v, e, c, cats] = await Promise.all([
           api.mySubmittedVideos(),
           api.myExpertEarnings(),
           api.listCourses({ page_size: 100 }),
+          api.listCategories(),
         ]);
         setVideos(v);
         setEarnings(e);
         setCourses(c.items);
+        setCategories(cats);
       }
     } catch {
       setProfile(null);
@@ -255,6 +264,7 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
       documentary: video.documentary,
       language: video.language || "en",
       course_id: "",
+      category_id: video.category_id ?? "",
     });
     setFormError(null);
     setFormNotice(null);
@@ -292,6 +302,7 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
         documentary: form.documentary,
         language: form.language,
         course_id: form.course_id || undefined,
+        category_id: form.category_id || undefined,
       };
       if (editingId) await api.updateSubmittedVideo(editingId, payload);
       else await api.submitVideo(payload);
@@ -399,6 +410,17 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
                   <option value="ar">{t.languageAr}</option>
                 </select>
               </div>
+              {categories.length > 0 && (
+                <label className="mt-3 block">
+                  <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.category}</span>
+                  <select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })} className={`${inputCls} px-3`}>
+                    <option value="">{t.noCategory}</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
               {courses.length > 0 && (
                 <label className="mt-3 block">
                   <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.courseSelector}</span>

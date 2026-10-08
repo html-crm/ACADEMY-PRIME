@@ -1,6 +1,7 @@
 import { isLocale, defaultLocale, getDictionary } from "@/lib/i18n";
 import { Locale } from "@/types/user";
 import { Hero } from "@/components/home/Hero";
+import { HomeCategoryNav } from "@/components/home/HomeCategoryNav";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { FeaturedCourses } from "@/components/home/FeaturedCourses";
 import { Tokenomics } from "@/components/home/Tokenomics";
@@ -10,6 +11,12 @@ interface HomePageProps {
   params: { locale: string };
 }
 
+export const revalidate = 60;
+
+export function generateStaticParams() {
+  return [{ locale: "en" }, { locale: "ar" }];
+}
+
 export default async function HomePage({ params }: HomePageProps) {
   const locale: Locale = isLocale(params.locale) ? params.locale : defaultLocale;
   const dict = await getDictionary(locale);
@@ -17,6 +24,7 @@ export default async function HomePage({ params }: HomePageProps) {
   return (
     <>
       <Hero copy={dict.home.hero} />
+      <HomeCategoryNav copy={dict.home.categoryNav} locale={locale} />
       <HowItWorks copy={dict.home.howItWorks} />
       <section className="border-b border-line bg-ink-950 py-24">
         <div className="container-content grid items-start gap-12 lg:grid-cols-2">

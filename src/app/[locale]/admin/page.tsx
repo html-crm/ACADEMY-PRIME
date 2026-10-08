@@ -107,6 +107,8 @@ const COPY = {
     passwordsNoMatch: "Passwords do not match",
     courseSelector: "Assign to course (optional)",
     noCourse: "No course (standalone)",
+    categorySelector: "Category (optional)",
+    noCategory: "No category",
     partnerName: "Partner name",
     partnerLogo: "Logo URL",
     partnerWebsite: "Website URL",
@@ -224,6 +226,8 @@ const COPY = {
     passwordsNoMatch: "كلمتا المرور غير متطابقتين",
     courseSelector: "إضافة إلى دورة (اختياري)",
     noCourse: "بدون دورة (مستقل)",
+    categorySelector: "التصنيف (اختياري)",
+    noCategory: "بدون تصنيف",
     partnerName: "اسم الشريك",
     partnerLogo: "رابط الشعار",
     partnerWebsite: "رابط الموقع",
@@ -332,12 +336,14 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
     documentary: false,
     language: "en",
     course_id: "",
+    category_ids: [] as string[],
     reward: "",
   });
   const [postState, setPostState] = useState<"idle" | "busy" | "ok">("idle");
   const [passwordForm, setPasswordForm] = useState({ current: "", newPass: "", confirm: "" });
   const [passwordState, setPasswordState] = useState<"idle" | "busy" | "ok" | "error">("idle");
   const [courses, setCourses] = useState<CoursePublic[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [partnerForm, setPartnerForm] = useState({
     id: "",
@@ -377,6 +383,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
       if (which === "post") {
         const c = await safeLoad(() => api.listCourses({ page_size: 100 }), { items: [], total: 0, page: 1, page_size: 100 });
         setCourses(c.items);
+        setCategories(await safeLoad(() => api.listCategories(), []));
       }
     },
     [safeLoad, videoFilter],
@@ -508,10 +515,11 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
         documentary: post.documentary,
         language: post.language,
         course_id: post.course_id || undefined,
+        category_ids: post.category_ids,
         reward_amount: post.reward.trim() || undefined,
       });
       setPostState("ok");
-      setPost({ title: "", source_url: "", duration_minutes: "", duration_seconds: "", description: "", difficulty: "beginner", format: "long", documentary: false, language: "en", course_id: "", reward: "" });
+      setPost({ title: "", source_url: "", duration_minutes: "", duration_seconds: "", description: "", difficulty: "beginner", format: "long", documentary: false, language: "en", course_id: "", category_ids: [], reward: "" });
     } catch (err) {
       setPostState("idle");
       setError(err instanceof ApiError ? err.message : t.loadError);
@@ -1102,6 +1110,48 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                     ))}
                   </select>
                 </label>
+              )}
+              {categories.length > 0 && (
+                <div className="mt-4 block">
+                  <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.categorySelector}</span>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPost({ ...post, category_ids: [] })}
+                      className={
+                        post.category_ids.length === 0
+                          ? "rounded-full border border-brass-400 bg-brass-400 px-3 py-1.5 text-xs font-bold text-ink-950"
+                          : "rounded-full border border-line bg-white px-3 py-1.5 text-xs font-medium text-ink-600 hover:border-ink-300"
+                      }
+                    >
+                      {t.noCategory}
+                    </button>
+                    {categories.map((c) => {
+                      const active = post.category_ids.includes(c.id);
+                      return (
+                        <button
+                          type="button"
+                          key={c.id}
+                          onClick={() =>
+                            setPost({
+                              ...post,
+                              category_ids: active
+                                ? post.category_ids.filter((id) => id !== c.id)
+                                : [...post.category_ids, c.id],
+                            })
+                          }
+                          className={
+                            active
+                              ? "rounded-full border border-brass-400 bg-brass-400 px-3 py-1.5 text-xs font-bold text-ink-950"
+                              : "rounded-full border border-line bg-white px-3 py-1.5 text-xs font-medium text-ink-600 hover:border-ink-300"
+                          }
+                        >
+                          {c.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
               <label className="mt-4 block">
                 <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">{t.fDesc}</span>

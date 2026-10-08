@@ -1,19 +1,22 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+from secrets import token_urlsafe
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import func, or_, select
 
 from app.core.deps import CurrentUser, DbSession, RequireAdmin
+from app.core.security import hash_password
 from app.models.content import Video
 from app.models.enums import AccountStatus, ContentStatus, ExpertStatus, RewardStatus, UserRole
 from app.models.expert import Expert
 from app.models.platform import AuditLog, Country, PlatformSetting
 from app.models.reward import RewardSettings
 from app.models.reward import Reward as RewardLedger
-from app.models.user import User
+from app.models.user import User, UserProfile
 from app.schemas.admin import (
+    AdminExpertCreateIn,
     AdminExpertOut,
     AdminExpertReviewIn,
     AuditLogOut,
@@ -26,6 +29,7 @@ from app.schemas.admin import (
     StatsOut,
     UserAdminOut,
     UserStatusIn,
+    UserUpgradeIn,
 )
 from app.services import audit_service, notification_service
 
@@ -91,6 +95,57 @@ def set_user_status(
     return UserAdminOut.model_validate(target)
 
 
+@router.patch("/users/{user_id}/upgrade", response_model=UserAdminOut)
+def upgrade_user(
+    user_id: UUID,
+    data: UserUpgradeIn,
+    request: Request,
+    admin: RequireAdmin,
+    db: DbSession,
+) -> UserAdminOut:
+    if data.role is None and data.is_vip is None:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "no_update", "message": "Provide a role or is_vip to upgrade."},
+        )
+    target = db.get(User, user_id)
+    if target is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail={"code": "user_not_found", "message": "User not found."})
+
+    if data.role == UserRole.EXPERT and target.expert is None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail={"code": "expert_required", "message": "Set the role to Expert only after their expert application is approved."},
+        )
+
+    changes: dict = {}
+    if data.role is not None and data.role != target.role:
+        if target.role == UserRole.ADMIN and data.role != UserRole.ADMIN:
+            admin_count = db.scalar(select(func.count()).select_from(User).where(User.role == UserRole.ADMIN))
+            if admin_count is not None and admin_count <= 1:
+                raise HTTPException(
+                    status.HTTP_409_CONFLICT,
+                    detail={"code": "last_admin", "message": "Cannot remove the last admin account."},
+                )
+        target.role = data.role
+        changes["role"] = target.role.value
+
+    if data.is_vip is not None and data.is_vip != target.is_vip:
+        target.is_vip = data.is_vip
+        changes["is_vip"] = target.is_vip
+
+    if not changes:
+        return UserAdminOut.model_validate(target)
+
+    db.commit()
+    notification_service.notify(db, target.id, "notification.account.role_updated")
+    audit_service.log(
+        db, "admin.user.upgraded", actor=admin, entity_type="user",
+        entity_id=str(target.id), data=changes, request=request,
+    )
+    return UserAdminOut.model_validate(target)
+
+
 @router.get("/experts", response_model=list[AdminExpertOut])
 def list_experts(
     admin: RequireAdmin,
@@ -102,6 +157,65 @@ def list_experts(
         query = query.where(Expert.status == status_filter)
     rows = db.scalars(query.order_by(Expert.created_at.asc())).all()
     return [AdminExpertOut.model_validate(e) for e in rows]
+
+
+def _unique_placeholder_handle(db, base: str) -> tuple[str, str]:
+    slug = "".join(c for c in base.lower().replace(" ", "-") if c.isalnum() or c == "-")
+    slug = (slug or "expert")[:48].strip("-")
+    email = f"{slug}@expert.academy-prime.site"
+    existing_emails = set(
+        db.scalars(select(User.email).where(User.email.like(f"{slug}@%")))
+    )
+    n = len(existing_emails) + 1
+    username = slug if n == 1 else f"{slug}{n}"
+    email = f"{username}@expert.academy-prime.site"
+    while email in existing_emails:
+        n += 1
+        username = f"{slug}{n}"
+        email = f"{username}@expert.academy-prime.site"
+    return username, email
+
+
+@router.post("/experts", response_model=AdminExpertOut, status_code=status.HTTP_201_CREATED)
+def create_expert(
+    data: AdminExpertCreateIn,
+    request: Request,
+    admin: RequireAdmin,
+    db: DbSession,
+) -> AdminExpertOut:
+    username, email = _unique_placeholder_handle(db, data.display_name)
+    user = User(
+        email=email,
+        username=username,
+        password_hash=hash_password(token_urlsafe(24)),
+        role=UserRole.EXPERT,
+        status=AccountStatus.ACTIVE,
+        locale="en",
+    )
+    user.profile = UserProfile(display_name=data.display_name)
+    db.add(user)
+    db.flush()
+
+    expert = Expert(
+        user_id=user.id,
+        display_name=data.display_name,
+        headline=data.headline,
+        bio=data.bio,
+        links=data.links,
+        status=ExpertStatus.APPROVED,
+        reviewed_by=admin.id,
+        reviewed_at=datetime.now(timezone.utc),
+    )
+    db.add(expert)
+    db.commit()
+    db.refresh(expert)
+
+    audit_service.log(
+        db, "admin.expert.created", actor=admin, entity_type="expert",
+        entity_id=str(expert.id), data={"display_name": expert.display_name}, request=request,
+    )
+    notification_service.notify(db, expert.user_id, "notification.expert.review.approved")
+    return AdminExpertOut.model_validate(expert)
 
 
 @router.patch("/experts/{expert_id}/review", response_model=AdminExpertOut)

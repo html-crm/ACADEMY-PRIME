@@ -15,6 +15,7 @@ class UserAdminOut(BaseModel):
     email: str
     username: str
     role: UserRole
+    is_vip: bool = False
     status: AccountStatus
     country_code: str | None
     locale: str
@@ -25,6 +26,11 @@ class UserAdminOut(BaseModel):
 
 class UserStatusIn(BaseModel):
     status: AccountStatus
+
+
+class UserUpgradeIn(BaseModel):
+    role: UserRole | None = None
+    is_vip: bool | None = None
 
 
 class AdminExpertOut(BaseModel):
@@ -44,6 +50,13 @@ class AdminExpertOut(BaseModel):
 class AdminExpertReviewIn(BaseModel):
     status: ExpertStatus
     note: str | None = Field(default=None, max_length=1000)
+
+
+class AdminExpertCreateIn(BaseModel):
+    display_name: str = Field(min_length=2, max_length=80)
+    headline: str | None = Field(default=None, max_length=160)
+    bio: str | None = Field(default=None, max_length=2000)
+    links: list[str] = Field(default_factory=list, max_length=10)
 
 
 class RewardSettingsOut(BaseModel):

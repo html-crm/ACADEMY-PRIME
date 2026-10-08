@@ -85,6 +85,42 @@ def test_countries_upsert(client, db):
     assert bad.status_code == 422
 
 
+def test_admin_create_expert_by_name(client, db):
+    from sqlalchemy import select as sa_select
+
+    from app.models.user import User as UserModel
+
+    admin = make_user(db, role="admin")
+    headers = auth_headers(client, admin.email, "Passw0rd!123")
+
+    created = client.post(
+        "/api/v1/admin/experts",
+        json={"display_name": "Satoshi Expert", "headline": "On-chain analyst", "bio": "Covers on-chain fundamentals."},
+        headers=headers,
+    )
+    assert created.status_code == 201
+    body = created.json()
+    assert body["display_name"] == "Satoshi Expert"
+    assert body["status"] == "approved"
+    assert body["headline"] == "On-chain analyst"
+
+    linked_user = db.scalar(
+        sa_select(UserModel).where(UserModel.email.like("%@expert.academy-prime.site"))
+    )
+    assert linked_user is not None
+    assert linked_user.role == "expert"
+
+    listed = client.get("/api/v1/admin/experts", headers=headers)
+    assert listed.status_code == 200
+    assert any(e["id"] == body["id"] for e in listed.json())
+
+    forbidden = client.post(
+        "/api/v1/admin/experts",
+        json={"display_name": "Nope"},
+    )
+    assert forbidden.status_code in (401, 403)
+
+
 def test_user_country_validation(client, db):
     admin = make_user(db, role="admin")
     user = make_user(db)

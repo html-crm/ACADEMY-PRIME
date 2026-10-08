@@ -63,6 +63,28 @@ def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
+def get_optional_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+    db: DbSession,
+) -> User | None:
+    if credentials is None:
+        return None
+    try:
+        payload = decode_token(credentials.credentials)
+    except PyJWTError:
+        return None
+    if payload.get("type") != "access":
+        return None
+    try:
+        user_id = UUID(str(payload.get("sub")))
+    except (ValueError, TypeError, AttributeError):
+        return None
+    return db.get(User, user_id)
+
+
+OptionalUser = Annotated[User | None, Depends(get_optional_user)]
+
+
 def require_roles(*roles: UserRole):
     def checker(user: CurrentUser) -> User:
         if user.role not in roles:

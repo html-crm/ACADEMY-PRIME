@@ -2,13 +2,17 @@ import Link from "next/link";
 import { Locale } from "@/types/user";
 import { EarnersLeaderboard } from "@/components/rewards/EarnersLeaderboard";
 
+const API_TARGET = process.env.API_PROXY_TARGET || "http://127.0.0.1:8000";
+
+export const dynamic = "force-dynamic";
+
 const COPY = {
   en: {
     eyebrow: "ACADEMY PRIME — REWARDS SYSTEM",
     heroTitle: "LEARN. COMPLETE. EARN.",
     heroSub: "Learn crypto. Complete educational content. Earn ACAD-P.",
     heroDesc:
-      "Every eligible video on ACADEMY PRIME gives you the opportunity to earn 0.001 ACAD-P after successfully completing the required viewing and verification process.",
+      "Every eligible video on ACADEMY PRIME earns you ACAD-P after successful completion. The reward is set per video by the platform.",
     howItWorks: "HOW IT WORKS",
     step1Title: "CHOOSE",
     step1Desc: "Choose an eligible educational video.",
@@ -18,7 +22,6 @@ const COPY = {
     step3Desc: "Finish the lesson and any required verification.",
     step4Title: "EARN",
     step4Desc: "Once your completion is verified, you qualify for:",
-    rewardAmount: "0.001 ACAD-P",
     simpleFlow: "SIMPLE FLOW",
     flowText: "WATCH → COMPLETE → VERIFY → EARN",
     yourLearning: "YOUR LEARNING HAS A REWARD",
@@ -27,14 +30,15 @@ const COPY = {
     tableHeader1: "Completed Videos",
     tableHeader2: "Reward",
     formula: "Reward calculation:",
-    formulaCode: "Completed eligible videos × 0.001 ACAD-P",
-    connectWallet: "CONNECT YOUR WALLET",
+    formulaCode: "Completed eligible videos × per-video ACAD-P reward (set by the platform)",
+    connectWallet: "YOUR ACAD-P BALANCE",
     connectDesc:
-      "To receive your rewards, connect your compatible Solana wallet to your ACADEMY PRIME account.",
+      "Rewards you earn are held as ACAD-P credits in your Academy Prime balance — not as a blockchain token yet.",
     connectDesc2:
-      "After your reward becomes eligible, you can claim it to your connected wallet.",
-    connectBtn: "Connect Wallet",
-    feesNote: "Applicable Solana network transaction fees are the user's responsibility.",
+      "Real on-chain ACAD-P distribution will be announced at a later stage. No wallet is needed right now.",
+    connectBtn: "View my balance",
+    feesNote:
+      "Your ACAD-P balance grows as you complete verified lessons. Distribution plans will be announced.",
     security: "SECURITY",
     securityText: "Never share your seed phrase or private key. ACADEMY PRIME will never ask you for them.",
     important: "IMPORTANT",
@@ -51,7 +55,7 @@ const COPY = {
     heroTitle: "تعلّم. أكمل. اكسب.",
     heroSub: "تعلّم الكريبتو. أكمل المحتوى التعليمي. اكسب ACAD-P.",
     heroDesc:
-      "كل فيديو مؤهل في أكاديمية برايم يمنحك الفرصة لكسب 0.001 ACAD-P بعد إتمام المشاهدة والتحقق بنجاح.",
+      "كل فيديو مؤهل في أكاديمية برايم يمنحك ACAD-P بعد إتمام المشاهدة والتحقق بنجاح. المكافأة محدّدة لكل فيديو من المنصة.",
     howItWorks: "كيف يعمل",
     step1Title: "اختر",
     step1Desc: "اختر فيديو تعليمي مؤهلاً.",
@@ -61,7 +65,6 @@ const COPY = {
     step3Desc: "أنهِ الدرس وأي التحقق المطلوب.",
     step4Title: "اكسب",
     step4Desc: "بمجرد التحقق من إتمامك، تؤهل لتلقي:",
-    rewardAmount: "0.001 ACAD-P",
     simpleFlow: "تدفق بسيط",
     flowText: "شاهد ← أكمل ← تحقق ← اكسب",
     yourLearning: "تعلّمك له مكافأة",
@@ -70,14 +73,13 @@ const COPY = {
     tableHeader1: "الفيديوهات المكتملة",
     tableHeader2: "المكافأة",
     formula: "حساب المكافأة:",
-    formulaCode: "عدد الفيديوهات المؤهلة المكتملة × 0.001 ACAD-P",
-    connectWallet: "اربط محفظتك",
+    formulaCode: "عدد الفيديوهات المؤهلة المكتملة × مكافأة الفيديو (تحدّدها المنصة لكل فيديو)",
+    connectWallet: "رصيد ACAD-P الخاص بك",
     connectDesc:
-      "للحصول على مكافآتك، اربط محفظة Solana المتوافقة مع حسابك في أكاديمية برايم.",
-    connectDesc2:
-      "بمجرد أهلية مكافأتك، يمكنك المطالبة بها إلى محفظتك المرتبطة.",
-    connectBtn: "ربط المحفظة",
-    feesNote: "رسوم معاملات شبكة Solana الناتجة على عاتق المستخدم.",
+      "المكافآت التي تكسبها تُحفظ كأرصدة ACAD-P في حسابك في أكاديمية برايم — وليست رموز بلوكشين بعد.",
+    connectDesc2: "توزيع ACAD-P الحقيقي سيُعلن عنه في مرحلة لاحقة. لا حاجة لمحفظة في الوقت الحالي.",
+    connectBtn: "عرض رصيدي",
+    feesNote: "رصيد ACAD-P ينمو كلما أكملت دروساً موثّقة. خطط التوزيع ستُعلن لاحقاً.",
     security: "الأمان",
     securityText: "لا تشارك أبداً عبارة البذرة أو المفتاح الخاص. أكاديمية برايم لن تطلب منك أيهما.",
     important: "مهم",
@@ -91,12 +93,38 @@ const COPY = {
   },
 };
 
-const REWARDS_TABLE = [
-  { videos: "1", reward: "0.001 ACAD-P" },
-  { videos: "10", reward: "0.010 ACAD-P" },
-  { videos: "100", reward: "0.100 ACAD-P" },
-  { videos: "1,000", reward: "1.000 ACAD-P" },
-];
+type RewardRange = { min: number; max: number };
+
+async function fetchRewardRange(): Promise<RewardRange | null> {
+  try {
+    const url = new URL(`${API_TARGET}/api/v1/content/videos`);
+    url.searchParams.set("page_size", "50");
+    const values: number[] = [];
+    for (let page = 1; page <= 20; page++) {
+      url.searchParams.set("page", String(page));
+      const res = await fetch(url.toString(), { cache: "no-store" });
+      if (!res.ok) break;
+      const data = (await res.json()) as {
+        items: { effective_reward: string }[];
+      };
+      const items = data.items ?? [];
+      for (const v of items) {
+        const n = Number(v.effective_reward);
+        if (Number.isFinite(n) && n > 0) values.push(n);
+      }
+      if (items.length < 50) break;
+    }
+    if (values.length === 0) return null;
+    return { min: Math.min(...values), max: Math.max(...values) };
+  } catch {
+    return null;
+  }
+}
+
+function fmt(n: number): string {
+  if (n === 0) return "0";
+  return n.toLocaleString("en-US", { maximumSignificantDigits: 3 });
+}
 
 const STEPS = [
   { num: "01", titleKey: "step1Title" as const, descKey: "step1Desc" as const, icon: "🔍" },
@@ -105,9 +133,42 @@ const STEPS = [
   { num: "04", titleKey: "step4Title" as const, descKey: "step4Desc" as const, icon: "💰" },
 ];
 
-export default function RewardsPage({ params }: { params: { locale: string } }) {
+export default async function RewardsPage({ params }: { params: { locale: string } }) {
   const locale = (params.locale === "ar" ? "ar" : "en") as Locale;
-  const t = COPY[locale];
+  const base = COPY[locale];
+  const range = await fetchRewardRange();
+
+  const t = { ...base };
+  if (range) {
+    const label = range.min === range.max ? fmt(range.min) : `${fmt(range.min)} – ${fmt(range.max)}`;
+    if (locale === "ar") {
+      t.heroDesc =
+        range.min === range.max
+          ? `كل فيديو مؤهل في أكاديمية برايم يمنحك ${label} ACAD-P بعد إتمام المشاهدة والتحقق بنجاح. المكافأة محدّدة لكل فيديو من المنصة.`
+          : `كل فيديو مؤهل في أكاديمية برايم يمنحك ACAD-P بعد إتمام المشاهدة والتحقق بنجاح — وتتراوح مكافأة الفيديو حالياً بين ${label} ACAD-P.`;
+      t.formulaCode = `عدد الفيديوهات المؤهلة المكتملة × مكافأة الفيديو (تتراوح من ${fmt(range.min)} إلى ${fmt(range.max)} ACAD-P)`;
+    } else {
+      t.heroDesc =
+        range.min === range.max
+          ? `Every eligible video on ACADEMY PRIME earns you ${label} ACAD-P after successful completion. The reward is set per video by the platform.`
+          : `Every eligible video on ACADEMY PRIME earns you ACAD-P after successful completion — the reward is set per video, and eligible lessons currently reward from ${fmt(range.min)} to ${fmt(range.max)} ACAD-P each.`;
+      t.formulaCode = `Completed eligible videos × per-video ACAD-P reward (currently ${fmt(range.min)} – ${fmt(range.max)} ACAD-P)`;
+    }
+  }
+
+  const rows = [1, 10, 100, 1000].map((v) => {
+    const max = range?.max;
+    const equal = range !== null && range.min === range.max;
+    const reward =
+      max === undefined
+        ? "—"
+        : equal
+          ? `${fmt(max * v)} ACAD-P`
+          : locale === "ar"
+            ? `حتى ${fmt(max * v)} ACAD-P`
+            : `up to ${fmt(max * v)} ACAD-P`;
+    return { videos: v.toLocaleString("en-US"), reward };
+  });
 
   return (
     <div className="bg-paper-50">
@@ -165,7 +226,7 @@ export default function RewardsPage({ params }: { params: { locale: string } }) 
                 </tr>
               </thead>
               <tbody>
-                {REWARDS_TABLE.map((row) => (
+                {rows.map((row) => (
                   <tr key={row.videos} className="border-b border-line/50 last:border-0">
                     <td className="px-6 py-3 text-start text-ink-800">{row.videos}</td>
                     <td className="px-6 py-3 text-end font-semibold text-brass-600">{row.reward}</td>
@@ -184,7 +245,7 @@ export default function RewardsPage({ params }: { params: { locale: string } }) 
       {/* Leaderboard */}
       <EarnersLeaderboard locale={locale} variant="full" />
 
-      {/* Connect Wallet */}
+      {/* ACAD-P Balance */}
       <section className="border-t border-line py-20">
         <div className="container-content">
           <div className="mx-auto max-w-2xl text-center">
@@ -238,4 +299,3 @@ export default function RewardsPage({ params }: { params: { locale: string } }) 
     </div>
   );
 }
-

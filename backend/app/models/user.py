@@ -19,6 +19,7 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     status: Mapped[AccountStatus] = mapped_column(
         StrEnum(AccountStatus), default=AccountStatus.ACTIVE, nullable=False
     )
+    is_vip: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     country_code: Mapped[str | None] = mapped_column(
         String(2), ForeignKey("countries.code", use_alter=True)
     )
