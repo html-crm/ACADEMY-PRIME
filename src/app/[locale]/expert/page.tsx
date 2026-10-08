@@ -62,6 +62,14 @@ const COPY = {
     noCourse: "No course (standalone)",
     category: "Category",
     noCategory: "No category (optional)",
+    fetchLink: "Fetch details",
+    fetchingLink: "Fetching…",
+    linkDetected: "Detected from link",
+    tokenLabel: "Token",
+    linkFetched: "Filled from link — review and adjust.",
+    linkNoMeta: "Link detected, but duration is not publicly available for this platform.",
+    categoryAuto: "Category auto-filled from the title.",
+    fetchFailed: "Could not read this link. Check it and try again.",
   },
   ar: {
     heading: "استوديو الخبير",
@@ -117,6 +125,14 @@ const COPY = {
     noCourse: "بدون دورة (مستقل)",
     category: "التصنيف",
     noCategory: "بدون تصنيف (اختياري)",
+    fetchLink: "جلب التفاصيل",
+    fetchingLink: "جارٍ الجلب…",
+    linkDetected: "تم التعرف عليه من الرابط",
+    tokenLabel: "الرمز",
+    linkFetched: "تمت التعبئة من الرابط — راجعها وعدّلها.",
+    linkNoMeta: "تم التعرف على الرابط، لكن المدة غير متاحة للجمهور لهذه المنصة.",
+    categoryAuto: "تمت تعبئة التصنيف تلقائياً من العنوان.",
+    fetchFailed: "تعذّرت قراءة هذا الرابط. تحقق منه وحاول مجدداً.",
   },
 };
 
@@ -138,6 +154,39 @@ const fmtDuration = (s: number | null | undefined): string => {
   const sec = s % 60;
   return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 };
+
+function suggestCategory(
+  title: string,
+  categories: { id: string; name: string; slug: string }[],
+): { id: string; name: string } | null {
+  const normalized = title
+    .toLocaleLowerCase()
+    .replace(/[-_.]+/g, " ")
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ");
+  if (!normalized.trim()) return null;
+  let best: { id: string; name: string } | null = null;
+  let bestScore = 0;
+  for (const category of categories) {
+    const candidates = new Set<string>();
+    const names = [category.name, category.slug]
+      .map((c) => c.toLocaleLowerCase().replace(/[-_.]+/g, " ").trim())
+      .filter(Boolean);
+    for (const name of names) {
+      candidates.add(name);
+      for (const part of name.split(/\s+/)) {
+        if (part.length >= 4) candidates.add(part);
+      }
+    }
+    for (const candidate of candidates) {
+      if (normalized.includes(candidate) && candidate.length > bestScore) {
+        bestScore = candidate.length;
+        best = { id: category.id, name: category.name };
+      }
+    }
+  }
+  return best;
+}
 
 interface FormState {
   title: string;
@@ -184,6 +233,8 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
   const [formError, setFormError] = useState<string | null>(null);
   const [formNotice, setFormNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fetchingLink, setFetchingLink] = useState(false);
+  const [linkInfo, setLinkInfo] = useState<{ provider: string; token: string | null } | null>(null);
 
   const [displayName, setDisplayName] = useState("");
   const [headline, setHeadline] = useState("");
@@ -268,6 +319,7 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
     });
     setFormError(null);
     setFormNotice(null);
+    setLinkInfo(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -276,6 +328,7 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
     setForm(EMPTY_FORM);
     setFormError(null);
     setFormNotice(null);
+    setLinkInfo(null);
   }
 
   async function onSubmitOrSave(e: React.FormEvent) {
@@ -329,6 +382,62 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : "Error");
     }
+  }
+
+  async function fetchDetails(link: string) {
+    const target = link.trim();
+    if (!target) return;
+    setFetchingLink(true);
+    setFormError(null);
+    setFormNotice(null);
+    try {
+      const res = (await (
+        await fetch(`/link-info?url=${encodeURIComponent(target)}`, { cache: "no-store" })
+      ).json()) as {
+        provider: string;
+        token: string | null;
+        title: string | null;
+        duration_seconds: number | null;
+        description: string | null;
+        error?: string;
+      };
+      if (res.error) {
+        setFormError(t.fetchFailed);
+        return;
+      }
+      setLinkInfo({ provider: res.provider, token: res.token });
+      const next: Partial<FormState> = {};
+      if (res.title && !form.title.trim()) next.title = res.title;
+      if (res.description && !form.description.trim()) next.description = res.description;
+      if (typeof res.duration_seconds === "number" && res.duration_seconds > 0) {
+        next.duration_minutes = String(Math.floor(res.duration_seconds / 60));
+        next.duration_seconds = String(res.duration_seconds % 60);
+        if (form.format === "long" && !form.documentary && res.duration_seconds <= 60) {
+          next.format = "short";
+        }
+      }
+      const matched = suggestCategory(res.title ?? "", categories);
+      if (matched && !form.category_id) next.category_id = matched.id;
+      if (Object.keys(next).length > 0) setForm((prev) => ({ ...prev, ...next }));
+      if (res.duration_seconds) {
+        setFormNotice(matched && !form.category_id ? `${t.linkFetched} ${t.categoryAuto}` : t.linkFetched);
+      } else {
+        setFormNotice(t.linkNoMeta);
+      }
+    } catch {
+      setFormError(t.fetchFailed);
+    } finally {
+      setFetchingLink(false);
+    }
+  }
+
+  function onUrlPaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    const pasted = e.clipboardData.getData("text");
+    if (!pasted.trim()) return;
+    setForm((prev) => ({ ...prev, source_url: pasted.trim() }));
+    window.setTimeout(() => {
+      if (!fetchingLink) void fetchDetails(pasted.trim());
+    }, 0);
   }
 
     return (
@@ -389,7 +498,37 @@ export default function ExpertStudioPage({ params }: { params: { locale: string 
                 </select>
                 <input required minLength={5} maxLength={200} placeholder={t.title} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
               </div>
-              <input required type="url" placeholder={t.url} value={form.source_url} onChange={(e) => setForm({ ...form, source_url: e.target.value })} className={`${inputCls} mt-3`} />
+              <div className="mt-3 flex flex-wrap items-stretch gap-2">
+                <input
+                  required
+                  type="url"
+                  placeholder={t.url}
+                  value={form.source_url}
+                  onChange={(e) => setForm({ ...form, source_url: e.target.value })}
+                  onPaste={onUrlPaste}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void fetchDetails(form.source_url);
+                    }
+                  }}
+                  className={`${inputCls} min-w-[240px] flex-1`}
+                />
+                <button
+                  type="button"
+                  onClick={() => void fetchDetails(form.source_url)}
+                  disabled={fetchingLink}
+                  className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-ink-950 px-5 text-sm font-semibold text-paper-50 disabled:opacity-60"
+                >
+                  {fetchingLink ? t.fetchingLink : t.fetchLink}
+                </button>
+              </div>
+              {linkInfo && (
+                <p className="mt-2 rounded-lg border border-brass-400/30 bg-brass-400/10 px-3 py-2 font-mono text-xs text-brass-700">
+                  ✓ {t.linkDetected}: {linkInfo.provider}
+                  {linkInfo.token ? <> · {t.tokenLabel}: {linkInfo.token}</> : null}
+                </p>
+              )}
               <textarea rows={3} maxLength={5000} placeholder={t.description} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-3 w-full rounded-lg border border-line bg-paper-50 px-4 py-3 text-sm outline-none focus:border-brass-400" />
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="block">

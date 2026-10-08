@@ -10,6 +10,7 @@ export function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
+    pathname === "/link-info" ||
     pathname.includes("/favicon") ||
     PUBLIC_FILE.test(pathname)
   ) {

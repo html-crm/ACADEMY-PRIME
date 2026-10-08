@@ -37,6 +37,10 @@ const COPY = {
     connectDesc2:
       "Real on-chain ACAD-P distribution will be announced at a later stage. No wallet is needed right now.",
     connectBtn: "View my balance",
+    depositPromptTitle: "READY FOR DISTRIBUTION?",
+    depositPromptBody:
+      "Add the Solana deposit address you own from your dashboard so we can send your ACAD-P there when on-chain distribution opens.",
+    depositPromptLink: "Add deposit address",
     feesNote:
       "Your ACAD-P balance grows as you complete verified lessons. Distribution plans will be announced.",
     security: "SECURITY",
@@ -79,6 +83,10 @@ const COPY = {
       "المكافآت التي تكسبها تُحفظ كأرصدة ACAD-P في حسابك في أكاديمية برايم — وليست رموز بلوكشين بعد.",
     connectDesc2: "توزيع ACAD-P الحقيقي سيُعلن عنه في مرحلة لاحقة. لا حاجة لمحفظة في الوقت الحالي.",
     connectBtn: "عرض رصيدي",
+    depositPromptTitle: "جاهز للتوزيع؟",
+    depositPromptBody:
+      "أضف عنوان إيداع سولانا الذي تملكه من لوحة التحكم ليتم إرسال ACAD-P إليه عند فتح التوزيع على السلسلة.",
+    depositPromptLink: "أضف عنوان الإيداع",
     feesNote: "رصيد ACAD-P ينمو كلما أكملت دروساً موثّقة. خطط التوزيع ستُعلن لاحقاً.",
     security: "الأمان",
     securityText: "لا تشارك أبداً عبارة البذرة أو المفتاح الخاص. أكاديمية برايم لن تطلب منك أيهما.",
@@ -259,6 +267,17 @@ export default async function RewardsPage({ params }: { params: { locale: string
             >
               {t.connectBtn}
             </Link>
+
+            <div className="mt-8 rounded-xl2 border border-line bg-white p-6 text-start shadow-card">
+              <p className="text-xs font-bold uppercase tracking-widest text-brass-600">{t.depositPromptTitle}</p>
+              <p className="mt-2 text-sm leading-relaxed text-ink-600">{t.depositPromptBody}</p>
+              <Link
+                href={`/${locale}/dashboard`}
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-brass-400/50 bg-brass-400/10 px-6 py-2.5 text-sm font-semibold text-brass-700 transition-colors hover:bg-brass-400/20"
+              >
+                {t.depositPromptLink}
+              </Link>
+            </div>
 
             <p className="mt-4 text-xs text-ink-400">{t.feesNote}</p>
 

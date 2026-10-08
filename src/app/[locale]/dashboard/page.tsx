@@ -25,6 +25,20 @@ const COPY = {
     resume: "Resume",
     done: "Completed",
     walletTitle: "My Academy Prime wallet",
+    depositAddr: "Solana deposit address",
+    depositNote:
+      "Add the Solana wallet address you control. When ACAD-P on-chain distribution opens, we will send your tokens to this address. You can change it at any time.",
+    addrPlaceholder: "Paste your Solana address (base58)",
+    saveAddr: "Save address",
+    changeAddr: "Change",
+    cancelAddr: "Cancel",
+    copyAddr: "Copy",
+    copied: "Copied",
+    addrSavedSet: "Address saved.",
+    addrAlready: "This address is already set.",
+    invalidAddr: "Please enter a valid Solana address (32-44 base58 characters).",
+    addrSaveError: "Could not save address. Please try again.",
+    addrVerified: "Deposit address",
     rewardsTitle: "Recent rewards",
     rewardEmpty: "Watch a lesson to earn your first reward.",
     colType: "Type",
@@ -56,6 +70,20 @@ const COPY = {
     resume: "متابعة",
     done: "مكتمل",
     walletTitle: "محفظة أكاديمية برايم",
+    depositAddr: "عنوان إيداع سولانا",
+    depositNote:
+      "أضف عنوان محفظة سولانا الذي تملكه. عندما يُفتح توزيع ACAD-P على السلسلة، سنرسل رموزك إلى هذا العنوان. يمكنك تغييره في أي وقت.",
+    addrPlaceholder: "الصق عنوان سولانا الخاص بك",
+    saveAddr: "حفظ العنوان",
+    changeAddr: "تغيير",
+    cancelAddr: "إلغاء",
+    copyAddr: "نسخ",
+    copied: "تم النسخ",
+    addrSavedSet: "تم حفظ العنوان.",
+    addrAlready: "هذا العنوان مضبوط بالفعل.",
+    invalidAddr: "يرجى إدخال عنوان سولانا صالح (32-44 حرفاً).",
+    addrSaveError: "تعذّر حفظ العنوان. حاول مجدداً.",
+    addrVerified: "عنوان الإيداع",
     rewardsTitle: "أحدث المكافآت",
     rewardEmpty: "شاهد درساً لتحصل على أول مكافأة.",
     colType: "النوع",
@@ -72,6 +100,10 @@ const COPY = {
 };
 
 const num = (v: string) => Number(v).toLocaleString("en-US");
+
+const SOLANA_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+const shortAddr = (a: string) => (a.length > 16 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a);
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -92,6 +124,12 @@ export default function DashboardPage({ params }: { params: { locale: string } }
   const [progress, setProgress] = useState<ProgressRow[]>([]);
   const [rewards, setRewards] = useState<RewardLedgerEntry[]>([]);
   const [error, setError] = useState("");
+  const [addrInput, setAddrInput] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [wlError, setWlError] = useState("");
+  const [wlOk, setWlOk] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const loadAll = useCallback(async () => {
     try {
@@ -130,6 +168,55 @@ export default function DashboardPage({ params }: { params: { locale: string } }
 
   const inProgress = progress.filter((p) => !p.completed).slice(0, 6);
   const completedCount = progress.filter((p) => p.completed).length;
+
+  const currentAddr = summary?.wallet_address ?? null;
+
+  const saveAddress = async () => {
+    const a = addrInput.trim();
+    if (!SOLANA_RE.test(a)) {
+      setWlError(t.invalidAddr);
+      setWlOk("");
+      return;
+    }
+    if (currentAddr === a) {
+      setEditing(false);
+      setWlError("");
+      setWlOk(t.addrAlready);
+      return;
+    }
+    setSaving(true);
+    setWlError("");
+    setWlOk("");
+    try {
+      await api.linkWallet(a);
+      setWlOk(t.addrSavedSet);
+      setSummary((s) => (s ? { ...s, wallet_address: a } : s));
+      setEditing(false);
+      setAddrInput("");
+    } catch (err) {
+      setWlError(err instanceof ApiError ? err.message : t.addrSaveError);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const startEdit = () => {
+    setAddrInput(currentAddr ?? "");
+    setWlError("");
+    setWlOk("");
+    setEditing(true);
+  };
+
+  const copyAddress = () => {
+    if (!currentAddr) return;
+    void navigator.clipboard
+      .writeText(currentAddr)
+      .then(() => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {});
+  };
 
   return (
     <main className="min-h-screen bg-paper-100 pb-20" dir={rtl ? "rtl" : "ltr"}>
@@ -172,9 +259,61 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                 <p className="font-display text-4xl font-bold text-ink-950">{num(summary.available)}</p>
                 <span className="pb-1 text-sm font-bold text-brass-600">ACAD-P</span>
               </div>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-500">{t.balanceNote}</p>
-            </section>
+<p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-500">{t.balanceNote}</p>
 
+              <div className="mt-6 border-t border-line pt-5">
+                <p className="text-sm font-semibold text-ink-950">{t.depositAddr}</p>
+                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-ink-500">{t.depositNote}</p>
+
+                {wlError && <p className="mt-3 text-sm font-medium text-red-600">{wlError}</p>}
+                {wlOk && <p className="mt-3 text-sm font-medium text-emerald-700">{wlOk}</p>}
+
+                {!currentAddr || editing ? (
+                  <div className="mt-3 flex max-w-2xl flex-wrap items-center gap-2">
+                    <input
+                      value={addrInput}
+                      onChange={(e) => setAddrInput(e.target.value)}
+                      placeholder={t.addrPlaceholder}
+                      dir="ltr"
+                      className="min-w-[260px] flex-1 rounded-lg border border-line bg-paper-50 px-3 py-2 font-mono text-sm text-ink-900 outline-none focus:border-brass-500"
+                    />
+                    <Button variant="secondary" onClick={() => void saveAddress()} disabled={saving}>
+                      {t.saveAddr}
+                    </Button>
+                    {editing && currentAddr && (
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setEditing(false);
+                          setWlError("");
+                          setWlOk("");
+                        }}
+                      >
+                        {t.cancelAddr}
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-3 flex max-w-2xl flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-brass-400/15 px-2.5 py-0.5 text-xs font-semibold text-brass-700">
+                      {t.addrVerified}
+                    </span>
+                    <code
+                      dir="ltr"
+                      className="rounded-lg border border-line bg-paper-50 px-3 py-2 font-mono text-sm text-ink-900"
+                    >
+                      {shortAddr(currentAddr)}
+                    </code>
+                    <Button variant="ghost" onClick={copyAddress}>
+                      {copied ? t.copied : t.copyAddr}
+                    </Button>
+                    <Button variant="secondary" onClick={startEdit}>
+                      {t.changeAddr}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </section>
             <section className="mt-8">
               <h2 className="font-display text-lg font-semibold text-ink-950">{t.continueWatching}</h2>
               {inProgress.length === 0 && completedCount === 0 ? (
