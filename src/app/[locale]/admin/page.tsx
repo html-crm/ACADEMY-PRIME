@@ -145,6 +145,8 @@ const COPY = {
     payToken: "Pay tokens",
     noWallet: "No deposit address",
     neverPaid: "—",
+    copyAddr: "Copy",
+    copied: "Copied",
     payoutHeading: "Send tokens & confirm",
     payoutSub:
       "Send the tokens to the deposit address, then paste the transaction link so the user sees it on their dashboard.",
@@ -284,6 +286,8 @@ const COPY = {
     payToken: "دفع الرموز",
     noWallet: "لا يوجد عنوان إيداع",
     neverPaid: "—",
+    copyAddr: "نسخ",
+    copied: "تم النسخ",
     payoutHeading: "إرسال الرموز وتأكيد الدفع",
     payoutSub: "أرسل الرموز إلى عنوان الإيداع، ثم الصق رابط المعاملة ليظهر للمستخدم في لوحته.",
     payoutAmount: "المبلغ (ACAD-P)",
@@ -404,6 +408,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
   const [payoutMsg, setPayoutMsg] = useState("");
   const [payoutErr, setPayoutErr] = useState("");
   const [payoutBusy, setPayoutBusy] = useState(false);
+  const [copiedAddr, setCopiedAddr] = useState<string | null>(null);
 
   const safeLoad = useCallback(
     async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
@@ -1190,8 +1195,30 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                         <td className="px-4 py-3 text-ink-700">
                           {Number(u.claimed).toLocaleString("en-US")}
                         </td>
-                        <td className="max-w-[200px] truncate px-4 py-3 font-mono text-xs text-ink-600" dir="ltr">
-                          {u.wallet_address ?? <span className="text-ink-400">{t.noWallet}</span>}
+                        <td className="px-4 py-3" dir="ltr">
+                          {u.wallet_address ? (
+                            <div className="flex items-start gap-2">
+                              <code className="max-w-[240px] break-all font-mono text-xs leading-relaxed text-ink-700">
+                                {u.wallet_address}
+                              </code>
+                              <button
+                                onClick={() => {
+                                  void navigator.clipboard
+                                    .writeText(u.wallet_address ?? "")
+                                    .then(() => {
+                                      setCopiedAddr(u.user_id);
+                                      window.setTimeout(() => setCopiedAddr(null), 1500);
+                                    })
+                                    .catch(() => {});
+                                }}
+                                className="whitespace-nowrap text-xs font-semibold text-brass-600 hover:underline"
+                              >
+                                {copiedAddr === u.user_id ? t.copied : t.copyAddr}
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-ink-400">{t.noWallet}</span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-ink-500">
                           {u.payouts_count > 0 && u.last_payout ? (
