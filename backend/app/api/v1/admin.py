@@ -5,16 +5,18 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import func, or_, select
+from sqlalchemy.exc import IntegrityError
 
+from app.core.config import get_settings
 from app.core.deps import CurrentUser, DbSession, RequireAdmin
 from app.core.security import hash_password
 from app.models.content import Video
-from app.models.enums import AccountStatus, ContentStatus, ExpertStatus, RewardStatus, UserRole
+from app.models.enums import AccountStatus, ClaimStatus, ContentStatus, ExpertStatus, RewardStatus, UserRole
 from app.models.expert import Expert
 from app.models.platform import AuditLog, Country, PlatformSetting
-from app.models.reward import RewardSettings
+from app.models.reward import BlockchainTransaction, RewardSettings
 from app.models.reward import Reward as RewardLedger
-from app.models.user import User, UserProfile
+from app.models.user import User, UserProfile, Wallet
 from app.schemas.admin import (
     AdminExpertCreateIn,
     AdminExpertOut,
@@ -22,12 +24,15 @@ from app.schemas.admin import (
     AuditLogOut,
     CountryOut,
     CountryUpsertIn,
+    PayoutRecordIn,
+    PayoutRecordOut,
     PlatformSettingIn,
     PlatformSettingOut,
     RewardSettingsIn,
     RewardSettingsOut,
     StatsOut,
     UserAdminOut,
+    UserRewardAdminOut,
     UserStatusIn,
     UserUpgradeIn,
 )
@@ -397,6 +402,174 @@ def stats(admin: RequireAdmin, db: DbSession) -> StatsOut:
         tokens_pending=tokens_pending,
         tokens_claimed=tokens_claimed,
         tokens_issued=tokens_pending + tokens_claimed,
+    )
+
+
+@router.get("/rewards/users", response_model=list[UserRewardAdminOut])
+def list_reward_users(
+    admin: RequireAdmin,
+    db: DbSession,
+    q: str | None = Query(default=None, max_length=100),
+) -> list[UserRewardAdminOut]:
+    query = (
+        select(
+            User.id,
+            User.email,
+            User.username,
+            func.count(RewardLedger.id),
+            func.coalesce(func.sum(RewardLedger.amount), 0),
+        )
+        .join(RewardLedger, RewardLedger.user_id == User.id)
+        .group_by(User.id, User.email, User.username)
+        .order_by(func.sum(RewardLedger.amount).desc())
+    )
+    if q:
+        pattern = f"%{q}%"
+        query = query.where(or_(User.email.ilike(pattern), User.username.ilike(pattern)))
+    rows = db.execute(query).all()
+
+    results: list[UserRewardAdminOut] = []
+    for user_id, email, username, earned_count, total in rows:
+        available = db.scalar(
+            select(func.coalesce(func.sum(RewardLedger.amount), 0)).where(
+                RewardLedger.user_id == user_id, RewardLedger.status == RewardStatus.AVAILABLE
+            )
+        )
+        claimed = db.scalar(
+            select(func.coalesce(func.sum(RewardLedger.amount), 0)).where(
+                RewardLedger.user_id == user_id, RewardLedger.status == RewardStatus.CLAIMED
+            )
+        )
+        wallet_address = db.scalar(
+            select(Wallet.address).where(Wallet.user_id == user_id, Wallet.is_primary.is_(True))
+        )
+        payouts_count = (
+            db.scalar(
+                select(func.count())
+                .select_from(BlockchainTransaction)
+                .where(BlockchainTransaction.user_id == user_id)
+            )
+            or 0
+        )
+        last_payout = db.scalar(
+            select(BlockchainTransaction.signature)
+            .where(BlockchainTransaction.user_id == user_id)
+            .order_by(BlockchainTransaction.created_at.desc())
+        )
+        results.append(
+            UserRewardAdminOut(
+                user_id=user_id,
+                email=email,
+                username=username,
+                total_earned=str(total),
+                available=str(available or 0),
+                claimed=str(claimed or 0),
+                earned_count=int(earned_count),
+                wallet_address=wallet_address,
+                payouts_count=int(payouts_count),
+                last_payout=last_payout,
+            )
+        )
+    return results
+
+
+@router.post("/rewards/payout", response_model=PayoutRecordOut, status_code=status.HTTP_201_CREATED)
+def record_payout(
+    data: PayoutRecordIn,
+    request: Request,
+    admin: RequireAdmin,
+    db: DbSession,
+) -> PayoutRecordOut:
+    link = data.confirmation_link.strip()
+    if not (link.startswith("http://") or link.startswith("https://")):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "invalid_link", "message": "Confirmation link must start with http:// or https://."},
+        )
+    target = db.get(User, data.user_id)
+    if target is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail={"code": "user_not_found", "message": "User not found."})
+
+    wallet = db.scalar(
+        select(Wallet)
+        .where(Wallet.user_id == target.id)
+        .order_by(Wallet.is_primary.desc(), Wallet.created_at)
+    )
+    if wallet is None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail={"code": "no_wallet", "message": "This user has not linked a deposit address yet."},
+        )
+
+    available_rows = list(
+        db.scalars(
+            select(RewardLedger)
+            .where(
+                RewardLedger.user_id == target.id,
+                RewardLedger.status == RewardStatus.AVAILABLE,
+                RewardLedger.amount > 0,
+            )
+            .order_by(RewardLedger.created_at)
+        )
+    )
+    available_total = sum((Decimal(str(r.amount)) for r in available_rows), Decimal("0"))
+    if data.amount > available_total:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "payout_exceeds_balance",
+                "message": f"Amount exceeds the user's available balance of {available_total}.",
+            },
+        )
+
+    settings = get_settings()
+    now = datetime.now(timezone.utc)
+    tx = BlockchainTransaction(
+        user_id=target.id,
+        claim_id=None,
+        network=data.network,
+        signature=link,
+        mint=settings.TOKEN_MINT,
+        amount=data.amount,
+        status=ClaimStatus.CONFIRMED,
+        block_time=now,
+    )
+    db.add(tx)
+
+    remaining = data.amount
+    for reward in available_rows:
+        if remaining <= 0:
+            break
+        reward.status = RewardStatus.CLAIMED
+        reward.claimed_at = now
+        reward.tx_signature = link
+        remaining -= Decimal(str(reward.amount))
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail={"code": "duplicate_payout", "message": "That confirmation link was already recorded."},
+        )
+    db.refresh(tx)
+
+    audit_service.log(
+        db, "admin.reward.payout", actor=admin, entity_type="user",
+        entity_id=str(target.id),
+        data={"amount": str(data.amount), "network": data.network, "link": link[:80]},
+        request=request,
+    )
+    notification_service.notify(db, target.id, "notification.reward.paid", {"link": link})
+    return PayoutRecordOut(
+        id=tx.id,
+        user_id=tx.user_id,
+        amount=str(tx.amount),
+        network=tx.network,
+        confirmation_link=tx.signature,
+        status=tx.status.value,
+        created_at=tx.created_at,
     )
 
 

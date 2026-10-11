@@ -108,6 +108,36 @@ class CountryOut(CountryUpsertIn):
     code: str
 
 
+class UserRewardAdminOut(BaseModel):
+    user_id: UUID
+    email: str
+    username: str
+    total_earned: str
+    available: str
+    claimed: str
+    earned_count: int
+    wallet_address: str | None
+    payouts_count: int
+    last_payout: str | None
+
+
+class PayoutRecordIn(BaseModel):
+    user_id: UUID
+    amount: Decimal = Field(gt=0)
+    confirmation_link: str = Field(min_length=8, max_length=200)
+    network: str = Field(default="solana", max_length=20)
+
+
+class PayoutRecordOut(BaseModel):
+    id: UUID
+    user_id: UUID
+    amount: str
+    network: str
+    confirmation_link: str
+    status: str
+    created_at: datetime
+
+
 class AuditLogOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

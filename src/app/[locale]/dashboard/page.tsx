@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { api, ApiError, type DashboardSummary, type ProgressRow, type RewardLedgerEntry } from "@/lib/api";
+import { api, ApiError, type DashboardSummary, type ProgressRow, type RewardLedgerEntry, type PayoutRow } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { useSession } from "@/components/session/SessionProvider";
 
@@ -51,6 +51,11 @@ const COPY = {
     studioTitle: "Creator? Share what you know.",
     studioSub: "Post lessons and shorts from your studio.",
     studioBtn: "Open Studio",
+    payoutsTitle: "Payouts received",
+    colPayoutAmount: "Amount",
+    colPayoutLink: "Confirmation",
+    colPayoutDate: "Date",
+    viewPayout: "View transaction",
   },
   ar: {
     heading: "لوحتي",
@@ -96,6 +101,11 @@ const COPY = {
     studioTitle: "صاحب محتوى؟ شارك ما تعرفه.",
     studioSub: "انشر الدروس والمقاطع من استوديوك.",
     studioBtn: "افتح الاستوديو",
+    payoutsTitle: "الدفعات المستلمة",
+    colPayoutAmount: "المبلغ",
+    colPayoutLink: "التأكيد",
+    colPayoutDate: "التاريخ",
+    viewPayout: "عرض المعاملة",
   },
 };
 
@@ -123,6 +133,7 @@ export default function DashboardPage({ params }: { params: { locale: string } }
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [progress, setProgress] = useState<ProgressRow[]>([]);
   const [rewards, setRewards] = useState<RewardLedgerEntry[]>([]);
+  const [payouts, setPayouts] = useState<PayoutRow[]>([]);
   const [error, setError] = useState("");
   const [addrInput, setAddrInput] = useState("");
   const [editing, setEditing] = useState(false);
@@ -134,14 +145,16 @@ export default function DashboardPage({ params }: { params: { locale: string } }
   const loadAll = useCallback(async () => {
     try {
       setError("");
-      const [s, p, r] = await Promise.all([
+      const [s, p, r, pay] = await Promise.all([
         api.dashboard(),
         api.myProgress(),
         api.myRewards(),
+        api.myPayouts(),
       ]);
       setSummary(s);
       setProgress(p.items);
       setRewards(r.items);
+      setPayouts(pay);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t.loadError);
     }
@@ -314,6 +327,44 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                 )}
               </div>
             </section>
+            {payouts.length > 0 && (
+              <section className="mt-8">
+                <h2 className="font-display text-lg font-semibold text-ink-950">{t.payoutsTitle}</h2>
+                <div className="mt-3 overflow-x-auto rounded-xl border border-line bg-paper-50">
+                  <table className="w-full min-w-[520px] text-sm">
+                    <thead>
+                      <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-500">
+                        <th className="px-4 py-3 text-start">{t.colPayoutAmount}</th>
+                        <th className="px-4 py-3 text-start">{t.colPayoutLink}</th>
+                        <th className="px-4 py-3 text-start">{t.colPayoutDate}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payouts.map((p) => (
+                        <tr key={p.id} className="border-b border-line/60 last:border-0">
+                          <td className="px-4 py-3 font-medium text-ink-950">
+                            {num(p.amount)} <span className="text-xs font-bold text-brass-600">ACAD-P</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <a
+                              href={p.confirmation_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-semibold text-brass-600 hover:underline"
+                            >
+                              {t.viewPayout}
+                            </a>
+                          </td>
+                          <td className="px-4 py-3 text-ink-500">
+                            {new Date(p.created_at).toLocaleDateString(locale)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
             <section className="mt-8">
               <h2 className="font-display text-lg font-semibold text-ink-950">{t.continueWatching}</h2>
               {inProgress.length === 0 && completedCount === 0 ? (

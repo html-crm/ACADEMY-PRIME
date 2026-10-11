@@ -4,12 +4,13 @@ from sqlalchemy import func, select
 from app.core.deps import CurrentUser, DbSession, get_current_user
 from app.models.platform import Country
 from app.models.progress import CourseEnrollment, VideoCompletion
-from app.models.reward import RewardStatus
+from app.models.reward import BlockchainTransaction, RewardStatus
 from app.models.reward import Reward as RewardLedger
 from app.models.user import Wallet
 from app.schemas.auth import MeOut
 from app.schemas.user import (
     DashboardSummaryOut,
+    PayoutOut,
     ProfileOut,
     ProfileUpdateIn,
     WalletIn,
@@ -93,6 +94,26 @@ def dashboard(user: CurrentUser, db: DbSession) -> DashboardSummaryOut:
 @router.get("/me/wallets", response_model=list[WalletOut])
 def list_wallets(user: CurrentUser) -> list[WalletOut]:
     return [WalletOut.model_validate(w) for w in user.wallets]
+
+
+@router.get("/me/payouts", response_model=list[PayoutOut])
+def list_payouts(user: CurrentUser, db: DbSession) -> list[PayoutOut]:
+    rows = db.scalars(
+        select(BlockchainTransaction)
+        .where(BlockchainTransaction.user_id == user.id)
+        .order_by(BlockchainTransaction.created_at.desc())
+    ).all()
+    return [
+        PayoutOut(
+            id=r.id,
+            amount=str(r.amount),
+            network=r.network,
+            confirmation_link=r.signature,
+            status=r.status.value,
+            created_at=r.created_at,
+        )
+        for r in rows
+    ]
 
 
 @router.post("/me/wallets", response_model=WalletOut, status_code=status.HTTP_201_CREATED)

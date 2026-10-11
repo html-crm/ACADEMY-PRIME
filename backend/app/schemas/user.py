@@ -47,6 +47,15 @@ class WalletOut(BaseModel):
     created_at: datetime
 
 
+class PayoutOut(BaseModel):
+    id: UUID
+    amount: str
+    network: str
+    confirmation_link: str
+    status: str
+    created_at: datetime
+
+
 class BalanceSummaryOut(BaseModel):
     total_earned: str
     available: str

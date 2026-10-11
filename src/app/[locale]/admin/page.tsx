@@ -8,6 +8,7 @@ import {
   type AdminVideoRow,
   type AdminExpertRow,
   type AdminUserRow,
+  type AdminRewardUserRow,
   type RewardSettingsData,
   type CoursePublic,
   type Partner,
@@ -134,6 +135,26 @@ const COPY = {
     expertBio: "Bio (optional)",
     expertAdded: "Expert added!",
     expertNameRequired: "Enter the expert name.",
+    tabRewards: "Rewards",
+    colUser: "User",
+    colEarned: "Total earned",
+    colAvailableReward: "Available",
+    colPaidOut: "Paid out",
+    colDepositAddr: "Deposit address",
+    colPayouts: "Payouts",
+    payToken: "Pay tokens",
+    noWallet: "No deposit address",
+    neverPaid: "—",
+    payoutHeading: "Send tokens & confirm",
+    payoutSub:
+      "Send the tokens to the deposit address, then paste the transaction link so the user sees it on their dashboard.",
+    payoutAmount: "Amount (ACAD-P)",
+    payoutLink: "Confirmation link (Solscan / payment page)",
+    payoutRecord: "Record payout",
+    payoutDone: "Payout recorded!",
+    payoutClose: "Cancel",
+    noRewardUsers: "No users have earned tokens yet.",
+    searchUsers: "Search users",
   },
   ar: {
     heading: "لوحة المشرف",
@@ -253,6 +274,25 @@ const COPY = {
     expertBio: "السيرة (اختياري)",
     expertAdded: "تمت إضافة الخبير!",
     expertNameRequired: "أدخل اسم الخبير.",
+    tabRewards: "المكافآت",
+    colUser: "المستخدم",
+    colEarned: "إجمالي المكاسب",
+    colAvailableReward: "متاح",
+    colPaidOut: "تم الدفع",
+    colDepositAddr: "عنوان الإيداع",
+    colPayouts: "الدفعات",
+    payToken: "دفع الرموز",
+    noWallet: "لا يوجد عنوان إيداع",
+    neverPaid: "—",
+    payoutHeading: "إرسال الرموز وتأكيد الدفع",
+    payoutSub: "أرسل الرموز إلى عنوان الإيداع، ثم الصق رابط المعاملة ليظهر للمستخدم في لوحته.",
+    payoutAmount: "المبلغ (ACAD-P)",
+    payoutLink: "رابط التأكيد (سولسكان / صفحة الدفع)",
+    payoutRecord: "تسجيل الدفعة",
+    payoutDone: "تم تسجيل الدفعة!",
+    payoutClose: "إلغاء",
+    noRewardUsers: "لا يوجد مستخدمون ربحوا رموزاً بعد.",
+    searchUsers: "بحث عن مستخدمين",
   },
 };
 
@@ -267,7 +307,7 @@ const TONE: Record<string, string> = {
   suspended: "bg-red-50 text-red-600",
 };
 
-const TABS = ["overview", "post", "videos", "experts", "partners", "users", "settings", "password"] as const;
+const TABS = ["overview", "post", "videos", "experts", "partners", "users", "rewards", "settings", "password"] as const;
 type Tab = (typeof TABS)[number];
 
 const inputCls =
@@ -356,6 +396,14 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
   const [partnerMsg, setPartnerMsg] = useState("");
   const [expertForm, setExpertForm] = useState({ display_name: "", headline: "", bio: "" });
   const [expertMsg, setExpertMsg] = useState("");
+  const [rewardUsers, setRewardUsers] = useState<AdminRewardUserRow[]>([]);
+  const [rewardQuery, setRewardQuery] = useState("");
+  const [payoutTarget, setPayoutTarget] = useState<AdminRewardUserRow | null>(null);
+  const [payoutAmount, setPayoutAmount] = useState("");
+  const [payoutLink, setPayoutLink] = useState("");
+  const [payoutMsg, setPayoutMsg] = useState("");
+  const [payoutErr, setPayoutErr] = useState("");
+  const [payoutBusy, setPayoutBusy] = useState(false);
 
   const safeLoad = useCallback(
     async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
@@ -379,6 +427,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
       if (which === "experts") setExperts(await safeLoad(() => api.adminExperts(), []));
       if (which === "partners") setPartners(await safeLoad(() => api.adminPartners(), []));
       if (which === "users") setUsers(await safeLoad(() => api.adminUsers(), []));
+      if (which === "rewards") setRewardUsers(await safeLoad(() => api.adminRewardUsers(), []));
       if (which === "settings") setSettings(await safeLoad(() => api.adminRewardSettings(), null as unknown as RewardSettingsData));
       if (which === "post") {
         const c = await safeLoad(() => api.listCourses({ page_size: 100 }), { items: [], total: 0, page: 1, page_size: 100 });
@@ -476,6 +525,47 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
       await loadTab("users");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t.loadError);
+    }
+  }
+
+  function openPayout(u: AdminRewardUserRow) {
+    setPayoutTarget(u);
+    setPayoutAmount(u.available);
+    setPayoutLink("");
+    setPayoutMsg("");
+    setPayoutErr("");
+  }
+
+  async function recordPayout() {
+    if (!payoutTarget) return;
+    const amount = payoutAmount.trim();
+    const link = payoutLink.trim();
+    if (!amount || Number(amount) <= 0) {
+      setPayoutErr(t.payoutAmount);
+      return;
+    }
+    if (!/^https?:\/\//i.test(link)) {
+      setPayoutErr(t.payoutLink);
+      return;
+    }
+    setPayoutBusy(true);
+    setPayoutErr("");
+    setPayoutMsg("");
+    try {
+      await api.adminRecordPayout({
+        user_id: payoutTarget.user_id,
+        amount,
+        confirmation_link: link,
+      });
+      setPayoutMsg(t.payoutDone);
+      setPayoutTarget(null);
+      setPayoutAmount("");
+      setPayoutLink("");
+      setRewardUsers(await safeLoad(() => api.adminRewardUsers(), rewardUsers));
+    } catch (err) {
+      setPayoutErr(err instanceof ApiError ? err.message : t.loadError);
+    } finally {
+      setPayoutBusy(false);
     }
   }
 
@@ -599,6 +689,13 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
       setError(err instanceof ApiError ? err.message : t.loadError);
     }
   }
+
+  const rq = rewardQuery.trim().toLowerCase();
+  const shownRewardUsers = rq
+    ? rewardUsers.filter(
+        (u) => u.email.toLowerCase().includes(rq) || u.username.toLowerCase().includes(rq),
+      )
+    : rewardUsers;
 
   return (
     <main className="min-h-screen bg-paper-100 pb-20" dir={rtl ? "rtl" : "ltr"}>
@@ -986,6 +1083,148 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                 </tbody>
               </table>
             </div>
+          </section>
+        )}
+
+        {tab === "rewards" && (
+          <section className="mt-8">
+            <p className="text-sm text-ink-500">{t.payoutSub}</p>
+
+            <div className="mt-4 max-w-xs">
+              <input
+                value={rewardQuery}
+                onChange={(e) => setRewardQuery(e.target.value)}
+                placeholder={t.searchUsers}
+                className={inputCls}
+              />
+            </div>
+
+            {payoutMsg && <p className="mt-3 text-sm font-medium text-emerald-700">{payoutMsg}</p>}
+            {payoutErr && <p className="mt-3 text-sm font-medium text-red-600">{payoutErr}</p>}
+
+            {payoutTarget && (
+              <div className="mt-4 rounded-xl border border-brass-400/50 bg-brass-400/5 p-5">
+                <h2 className="font-display text-base font-semibold text-ink-950">
+                  {t.payoutHeading} — {payoutTarget.email}
+                </h2>
+                <p className="mt-1 break-all font-mono text-xs text-ink-600" dir="ltr">
+                  {payoutTarget.wallet_address}
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">
+                      {t.payoutAmount}
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      step="any"
+                      value={payoutAmount}
+                      onChange={(e) => setPayoutAmount(e.target.value)}
+                      className={inputCls}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500">
+                      {t.payoutLink}
+                    </span>
+                    <input
+                      value={payoutLink}
+                      onChange={(e) => setPayoutLink(e.target.value)}
+                      placeholder="https://solscan.io/tx/…"
+                      dir="ltr"
+                      className={inputCls}
+                    />
+                  </label>
+                </div>
+                <div className="mt-4 flex items-center gap-3">
+                  <button
+                    onClick={() => void recordPayout()}
+                    disabled={payoutBusy}
+                    className="rounded-lg bg-ink-950 px-4 py-2 text-sm font-semibold text-paper-50 hover:bg-ink-800 disabled:opacity-60"
+                  >
+                    {t.payoutRecord}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPayoutTarget(null);
+                      setPayoutErr("");
+                    }}
+                    className="text-sm font-semibold text-ink-500 hover:underline"
+                  >
+                    {t.payoutClose}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {shownRewardUsers.length === 0 ? (
+              <p className="mt-4 text-sm text-ink-500">{t.noRewardUsers}</p>
+            ) : (
+              <div className="mt-4 overflow-x-auto rounded-xl border border-line bg-paper-50">
+                <table className="w-full min-w-[860px] text-sm">
+                  <thead>
+                    <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-500">
+                      <th className="px-4 py-3 text-start">{t.colUser}</th>
+                      <th className="px-4 py-3 text-start">{t.colEarned}</th>
+                      <th className="px-4 py-3 text-start">{t.colAvailableReward}</th>
+                      <th className="px-4 py-3 text-start">{t.colPaidOut}</th>
+                      <th className="px-4 py-3 text-start">{t.colDepositAddr}</th>
+                      <th className="px-4 py-3 text-start">{t.colPayouts}</th>
+                      <th className="px-4 py-3 text-start">{t.colActions}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shownRewardUsers.map((u) => (
+                      <tr key={u.user_id} className="border-b border-line/60 last:border-0">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-ink-950">{u.email}</p>
+                          <p className="text-xs text-ink-500">{u.username}</p>
+                        </td>
+                        <td className="px-4 py-3 font-medium text-ink-950">
+                          {Number(u.total_earned).toLocaleString("en-US")}
+                        </td>
+                        <td className="px-4 py-3 text-brass-600">
+                          {Number(u.available).toLocaleString("en-US")}
+                        </td>
+                        <td className="px-4 py-3 text-ink-700">
+                          {Number(u.claimed).toLocaleString("en-US")}
+                        </td>
+                        <td className="max-w-[200px] truncate px-4 py-3 font-mono text-xs text-ink-600" dir="ltr">
+                          {u.wallet_address ?? <span className="text-ink-400">{t.noWallet}</span>}
+                        </td>
+                        <td className="px-4 py-3 text-ink-500">
+                          {u.payouts_count > 0 && u.last_payout ? (
+                            <a
+                              href={u.last_payout}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-semibold text-brass-600 hover:underline"
+                            >
+                              {u.payouts_count}
+                            </a>
+                          ) : (
+                            t.neverPaid
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {u.wallet_address && Number(u.available) > 0 ? (
+                            <button
+                              onClick={() => openPayout(u)}
+                              className="text-xs font-semibold text-brass-600 hover:underline"
+                            >
+                              {t.payToken}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-ink-300">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
         )}
 

@@ -250,6 +250,28 @@ export type AdminUserRow = {
   created_at: string;
 };
 
+export type AdminRewardUserRow = {
+  user_id: string;
+  email: string;
+  username: string;
+  total_earned: string;
+  available: string;
+  claimed: string;
+  earned_count: number;
+  wallet_address: string | null;
+  payouts_count: number;
+  last_payout: string | null;
+};
+
+export type PayoutRow = {
+  id: string;
+  amount: string;
+  network: string;
+  confirmation_link: string;
+  status: string;
+  created_at: string;
+};
+
 export type AdminExpertRow = {
   id: string;
   user_id: string;
@@ -425,6 +447,7 @@ export const api = {
     }),
   myRewards: () => request<PageOf<RewardLedgerEntry>>("/users/me/rewards?page_size=20"),
   myClaims: () => request<ClaimRow[]>("/users/me/rewards/claims"),
+  myPayouts: () => request<PayoutRow[]>("/users/me/payouts"),
   claimRewards: () => request<ClaimRequestResult>("/users/me/rewards/claims", { method: "POST" }),
 
   leaderboard: (limit = 50) => request<LeaderboardOut>(`/leaderboard?limit=${limit}`, {}, 60),
@@ -541,6 +564,18 @@ export const api = {
   adminUpdateRewardSettings: (data: Partial<RewardSettingsData>) =>
     request<RewardSettingsData>("/admin/settings/rewards", {
       method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  adminRewardUsers: (q?: string) =>
+    request<AdminRewardUserRow[]>(`/admin/rewards/users?${qs({ q })}`),
+  adminRecordPayout: (data: {
+    user_id: string;
+    amount: string;
+    network?: string;
+    confirmation_link: string;
+  }) =>
+    request<PayoutRow>("/admin/rewards/payout", {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 
